@@ -4,8 +4,11 @@ export type DisciplineType =
   | 'Architectural' 
   | 'LifeSafety' 
   | 'MEP' 
+  | 'CommercialKitchen' 
+  | 'HealthSafety' 
   | 'HealthcareEquipment' 
-  | 'Accessibility';
+  | 'Accessibility' 
+  | 'RetailZoning';
 
 export interface DefectAnnotation {
   id: string;
@@ -43,7 +46,7 @@ export interface SpecificationRule {
 
 export interface CadEntity {
   id: string;
-  type: 'wall' | 'door' | 'room' | 'equipment' | 'dimension' | 'corridor' | 'hazard' | 'duct' | 'bed';
+  type: 'wall' | 'door' | 'room' | 'equipment' | 'dimension' | 'corridor' | 'hazard' | 'duct' | 'bed' | 'table' | 'escalator';
   layer: string;
   label?: string;
   x: number;
@@ -61,7 +64,15 @@ export interface CadEntity {
 export interface BlueprintDataset {
   id: string;
   name: string;
-  facilityType: 'Hospital ICU & Surgical Wing' | 'BioPharma Logistics Warehouse' | 'Radiology & Imaging Suite' | 'Custom Upload';
+  facilityType: 
+    | 'Commercial Shopping Mall' 
+    | 'Fine Dining Restaurant & Kitchen' 
+    | 'Corporate Office Tower' 
+    | 'Hospital ICU & Surgical Wing' 
+    | 'BioPharma Logistics Warehouse' 
+    | 'Radiology & Imaging Suite' 
+    | 'Residential Multi-Family' 
+    | 'Custom Upload';
   filename: string;
   fileType: 'dxf' | 'pdf' | 'img';
   dimensions: {
@@ -98,6 +109,9 @@ export interface TrainingSample {
   annotatedDefectsCount: number;
   status: 'ground_truth' | 'augmented' | 'synthetic';
   verifiedAccuracy: number;
+  source: 'Kaggle: CVC-FP' | 'Kaggle: FloorPlans-500' | 'Kaggle: Tell2Design' | 'CubiCasa5k-Vector' | 'Benchmark-GroundTruth' | 'Synthetic-Augmented';
+  domain: 'Commercial & Retail' | 'Restaurants & Kitchens' | 'Offices & Corporate' | 'Healthcare' | 'Residential' | 'Industrial';
+  description: string;
 }
 
 export interface TrainingEpochRecord {

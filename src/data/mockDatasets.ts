@@ -1,6 +1,443 @@
 import { BlueprintDataset, TrainingSample } from '../types';
 
 export const INITIAL_DATASETS: BlueprintDataset[] = [
+  // 1. COMMERCIAL SHOPPING MALL
+  {
+    id: 'mall-galleria',
+    name: 'Grand Horizon Retail Galleria & Mega-Mall',
+    facilityType: 'Commercial Shopping Mall',
+    filename: 'GH-MALL-LEVEL1-RETAIL-PLAN.dxf',
+    fileType: 'dxf',
+    dimensions: {
+      width: 1400,
+      height: 900,
+      scaleLabel: '1:100 Metric (1mm = 100mm)',
+      unit: 'mm',
+      realWidthMm: 140000,
+      realHeightMm: 90000,
+    },
+    specDocument: {
+      title: 'IBC 2024 Chapter 4 (Covered Mall Buildings) & NFPA 101 Mall Egress Code',
+      authority: 'International Code Council / NFPA Commercial Building Safety Committee',
+      version: 'IBC-2024-MALL-CODE',
+      summary: 'Mandatory spatial criteria for covered retail gallerias, maximum dead-end corridor lengths, smoke barrier fire shutter clearances, and occupant evacuation load sizing.'
+    },
+    storyNarrative: {
+      summary: 'Bi-level commercial shopping mall featuring a central skylight atrium, two anchor department stores, 34 inline retail boutique units, a food court mezzanine, and service loading corridors.',
+      spatialFlow: 'Primary shopper circulation revolves around a 12-meter wide central pedestrian concourse connecting North and South anchor stores. Secondary service corridors behind inline stores manage restocking and waste disposal away from public view.',
+      safetyRisk: 'CRITICAL EVACUATION LIABILITY: The South Service Loading Concourse has a dead-end corridor measuring 18.5 meters (exceeding the strict 6.0 meter IBC code ceiling by over 200%). In a fire emergency, employees trapped in this corridor will encounter zero secondary egress exits.',
+      logisticalEfficiency: 'Foot traffic distribution along the central atrium achieves 94% retail frontage visibility. However, promotional kiosk K-08 blocks the automatic rolling fire shutter descent path.',
+      keyFindings: [
+        'South Service Corridor dead-end length is 18.5 m (IBC §402.8 max allowed is 6.0 m).',
+        'Promotional Kiosk K-08 encroaches into the designated 3,000 mm clear perimeter for Atrium Fire Shutter FS-02.',
+        'Escalator Bank East clear discharge width is 1,600 mm (insufficient for calculated 1,450-shopper peak occupant load).'
+      ]
+    },
+    defects: [
+      {
+        id: 'MALL-DEF-001',
+        title: 'Dead-End Service Concourse Exceeds Maximum Permitted Length',
+        discipline: 'LifeSafety',
+        severity: 'CRITICAL',
+        status: 'FLAGGED',
+        specCode: 'IBC §402.8 / NFPA 101 §36.2.5.2',
+        specRequirement: 'Dead-end corridors in covered mall buildings and back-of-house service corridors must not exceed 6,000 mm (20 feet).',
+        actualMeasured: 'Actual measured dead-end travel length: 18,500 mm (60.7 feet)',
+        deviation: '+12,500 mm (+208% beyond legal dead-end limit)',
+        remediation: 'Knock out external wall panel at Axis G12 to install an emergency fire exit door EXIT-SC4 equipped with illuminated panic bar hardware.',
+        storyNarrative: 'In the event of heavy smoke spread, retail workers and delivery staff running down the South Service corridor will be trapped in a blind dead-end without an exit.',
+        boundingBox: { x: 920, y: 520, width: 280, height: 90 },
+        targetLabel: 'SOUTH SERVICE LOADING CONCOURSE',
+        layer: 'A-CORRIDOR',
+        confidenceScore: 0.98
+      },
+      {
+        id: 'MALL-DEF-002',
+        title: 'Retail Kiosk Encroaches on Automatic Fire Shutter Descent Zone',
+        discipline: 'LifeSafety',
+        severity: 'CRITICAL',
+        status: 'FLAGGED',
+        specCode: 'NFPA 80 Fire Doors & Shutters §6.3 / IBC §716',
+        specRequirement: 'A minimum 3,000 mm completely unobstructed zone must be maintained on both sides of automatic overhead smoke-curtain/fire-shutter tracks.',
+        actualMeasured: 'Promotional jewelry kiosk structure K-08 placed only 850 mm from shutter track',
+        deviation: '-2,150 mm illegal obstruction of fire barrier',
+        remediation: 'Relocate kiosk K-08 at least 3,500 mm northwards into central atrium open promenade.',
+        storyNarrative: 'If fire alarms trigger, the heavy rolling fire shutter will strike the kiosk roof and fail to seal, allowing toxic smoke to surge into the upper shopping levels.',
+        boundingBox: { x: 580, y: 340, width: 140, height: 100 },
+        targetLabel: 'CENTRAL ATRIUM FIRE SHUTTER FS-02',
+        layer: 'A-KIOSK',
+        confidenceScore: 0.95
+      },
+      {
+        id: 'MALL-DEF-003',
+        title: 'Escalator Concourse Discharge Width Constricted',
+        discipline: 'Accessibility',
+        severity: 'MAJOR',
+        status: 'FLAGGED',
+        specCode: 'IBC §1005.3.2 Minimum Egress Width',
+        specRequirement: 'Clear concourse width at escalator discharge points must provide at least 2,200 mm for calculated 1,450 occupant peak discharge.',
+        actualMeasured: 'Measured bottleneck between tenant storefront and glass guardrail: 1,600 mm',
+        deviation: '-600 mm (-27.3% crowd crush bottleneck)',
+        remediation: 'Set back tenant storefront glazing line for Unit T-14 by 700 mm.',
+        storyNarrative: 'During a mass evacuation or Black Friday crowd surge, descending shoppers stepping off the moving escalator will collide into stalled crowds at the bottleneck.',
+        boundingBox: { x: 380, y: 190, width: 160, height: 120 },
+        targetLabel: 'ESCALATOR DISCHARGE CONCOURSE EAST',
+        layer: 'A-CIRC',
+        confidenceScore: 0.92
+      }
+    ],
+    specs: [
+      {
+        id: 'MALL-RULE-01',
+        code: 'IBC-402.8-DEADEND',
+        category: 'Mall Egress',
+        title: 'Maximum Service Concourse Dead-End Length',
+        requirement: 'Length ≤ 6,000 mm (20\'-0")',
+        status: 'FAIL',
+        matchedEntitiesCount: 4,
+        threshold: '≤ 6,000 mm'
+      },
+      {
+        id: 'MALL-RULE-02',
+        code: 'NFPA-80-SHUTTER',
+        category: 'Fire Barriers',
+        title: 'Rolling Fire Shutter Clear Envelope',
+        requirement: 'Unobstructed clearance ≥ 3,000 mm',
+        status: 'FAIL',
+        matchedEntitiesCount: 2,
+        threshold: '≥ 3,000 mm'
+      },
+      {
+        id: 'MALL-RULE-03',
+        code: 'IBC-1005-CAPACITY',
+        category: 'Crowd Flow',
+        title: 'Escalator Discharge Minimum Concourse Width',
+        requirement: 'Clear width ≥ 2,200 mm',
+        status: 'FAIL',
+        matchedEntitiesCount: 3,
+        threshold: '≥ 2,200 mm'
+      },
+      {
+        id: 'MALL-RULE-04',
+        code: 'IBC-402.4-PROMENADE',
+        category: 'Mall Architecture',
+        title: 'Continuous Pedestrian Concourse Minimum Width',
+        requirement: 'Clear width ≥ 6,000 mm throughout entire galleria',
+        status: 'PASS',
+        matchedEntitiesCount: 12,
+        threshold: '≥ 6,000 mm'
+      }
+    ],
+    cadEntities: [
+      // Outer Mall Perimeter
+      { id: 'm-w1', type: 'wall', layer: 'A-WALL', x: 100, y: 80, x2: 1300, y2: 80 },
+      { id: 'm-w2', type: 'wall', layer: 'A-WALL', x: 1300, y: 80, x2: 1300, y2: 780 },
+      { id: 'm-w3', type: 'wall', layer: 'A-WALL', x: 1300, y: 780, x2: 100, y2: 780 },
+      { id: 'm-w4', type: 'wall', layer: 'A-WALL', x: 100, y: 780, x2: 100, y2: 80 },
+
+      // Anchor Stores (North & South)
+      { id: 'm-r1', type: 'room', layer: 'A-ROOM', x: 120, y: 100, width: 280, height: 660, label: 'ANCHOR DEPT STORE NORTH' },
+      { id: 'm-r2', type: 'room', layer: 'A-ROOM', x: 1000, y: 100, width: 280, height: 400, label: 'ANCHOR DEPT STORE SOUTH' },
+
+      // Retail Units along Promenade
+      { id: 'm-u1', type: 'room', layer: 'A-ROOM', x: 440, y: 100, width: 140, height: 180, label: 'RETAIL T-11' },
+      { id: 'm-u2', type: 'room', layer: 'A-ROOM', x: 600, y: 100, width: 140, height: 180, label: 'RETAIL T-12' },
+      { id: 'm-u3', type: 'room', layer: 'A-ROOM', x: 760, y: 100, width: 160, height: 180, label: 'RETAIL T-14 (FASHION)' },
+      { id: 'm-u4', type: 'room', layer: 'A-ROOM', x: 440, y: 500, width: 180, height: 260, label: 'FOOD COURT FOOD-HALL' },
+      { id: 'm-u5', type: 'room', layer: 'A-ROOM', x: 640, y: 500, width: 240, height: 260, label: 'CINEMA MULTIPLEX' },
+
+      // Central Concourse & Atrium
+      { id: 'm-atr', type: 'room', layer: 'A-ROOM', x: 440, y: 300, width: 520, height: 180, label: 'CENTRAL ATRIUM & PROMENADE' },
+
+      // Escalators
+      { id: 'm-esc', type: 'escalator', layer: 'EQUIPMENT', x: 400, y: 220, width: 80, height: 50, label: 'ESCALATOR BANK EAST' },
+
+      // Kiosk K-08
+      { id: 'm-k08', type: 'equipment', layer: 'A-KIOSK', x: 610, y: 360, width: 70, height: 60, label: 'KIOSK K-08' },
+
+      // Dead-End Service Corridor South
+      { id: 'm-sc', type: 'corridor', layer: 'A-CORRIDOR', x: 940, y: 540, width: 240, height: 50, label: 'SERVICE CORRIDOR (DEAD-END)' }
+    ]
+  },
+
+  // 2. FINE DINING RESTAURANT & COMMERCIAL KITCHEN
+  {
+    id: 'restaurant-bistro',
+    name: 'Le Bistro Impérial & Culinary Kitchen',
+    facilityType: 'Fine Dining Restaurant & Kitchen',
+    filename: 'BISTRO-CHEF-KITCHEN-REV4.dxf',
+    fileType: 'dxf',
+    dimensions: {
+      width: 1400,
+      height: 900,
+      scaleLabel: '1:50 Metric (1mm = 50mm)',
+      unit: 'mm',
+      realWidthMm: 70000,
+      realHeightMm: 45000,
+    },
+    specDocument: {
+      title: 'NFPA 96 Commercial Cooking Fire Protection & FDA 2022 Food Hygiene Code',
+      authority: 'National Fire Protection Association / US FDA Food Safety Inspection',
+      version: 'NFPA-96-CHEF-SPEC-2022',
+      summary: 'Commercial cooking hood overhang clearances, grease duct separation, food preparation cross-contamination buffer distances, and ADA restaurant dining table aisle dimensions.'
+    },
+    storyNarrative: {
+      summary: 'High-end 120-seat fine dining restaurant encompassing a luxury front-of-house dining salon, cocktail bar & lounge, walk-in cold rooms, and an open culinary exhibition cookline.',
+      spatialFlow: 'Patrons enter through the front maître d\' station into the dining salon. Waitstaff circulate via a two-door swinging pantry into the commercial kitchen, where hot cooklines, plating passes, and scullery dishwashing operate in isolated quadrants.',
+      safetyRisk: 'CRITICAL GREASE FIRE HAZARD: The Type-1 Commercial Range Exhaust Hood over the deep fryers and chargrill overhangs the appliance edge by only 50 mm (NFPA 96 mandates minimum 150 mm / 6 inches). Grease vapor and flame flare-ups risk escaping into the ceiling plenum, creating extreme fire hazard.',
+      logisticalEfficiency: 'Waitstaff food-pickup cycle from the hot pass is under 18 seconds. However, the dining room table arrangement pinches ADA wheelchair pathways down to 720 mm (violating the 915 mm federal standard).',
+      keyFindings: [
+        'Type-1 Exhaust Hood overhang is 50 mm beyond open fryer battery (NFPA 96 §5.1 mandates ≥ 150 mm).',
+        'Raw poultry prep sink is 450 mm from ready-to-eat vegetable prep table without impermeable splash shield.',
+        'Dining Room Table Aisles between Banquettes B1-B4 measure 720 mm (ADA §403 mandates ≥ 915 mm).'
+      ]
+    },
+    defects: [
+      {
+        id: 'REST-DEF-001',
+        title: 'Commercial Range Hood Overhang Deficient Beyond Fryers',
+        discipline: 'CommercialKitchen',
+        severity: 'CRITICAL',
+        status: 'FLAGGED',
+        specCode: 'NFPA 96 §5.1.2.1 / International Mechanical Code §507',
+        specRequirement: 'Type-1 exhaust hoods must overhang all cooking surfaces by at least 150 mm (6 inches) on all open sides to capture grease vapors.',
+        actualMeasured: 'Hood overhang measures only 50 mm (2 inches) on East fryer edge',
+        deviation: '-100 mm (-66.7% deficient capture envelope)',
+        remediation: 'Extend stainless steel canopy hood C-01 eastward by 200 mm or install certified side grease skirts.',
+        storyNarrative: 'Hot vaporized grease and oil droplets will bypass the exhaust filters and deposit on combustible ceiling tiles, risking a structural kitchen flashover fire.',
+        boundingBox: { x: 740, y: 150, width: 220, height: 140 },
+        targetLabel: 'COMMERCIAL COOKLINE TYPE-1 HOOD C-01',
+        layer: 'M-HVAC',
+        confidenceScore: 0.97
+      },
+      {
+        id: 'REST-DEF-002',
+        title: 'Cross-Contamination Risk Between Raw Poultry & Produce Sinks',
+        discipline: 'HealthSafety',
+        severity: 'CRITICAL',
+        status: 'FLAGGED',
+        specCode: 'FDA Food Code §4-402 / Health Code Title 10',
+        specRequirement: 'Raw meat/poultry preparation areas must maintain at least 1,200 mm physical separation or an impermeable 600 mm tall acrylic/stainless splash shield from clean produce prep.',
+        actualMeasured: 'Direct open juxtaposition with only 450 mm clearance and zero barrier shield',
+        deviation: '-750 mm distance deficit / missing sanitary partition',
+        remediation: 'Install 600 mm tall stainless-steel sanitary divider plate between Sink SK-03 and SK-04.',
+        storyNarrative: 'Water splash from rinsing raw chicken will cross-contaminate fresh salad greens with Salmonella and Campylobacter bacteria.',
+        boundingBox: { x: 1010, y: 150, width: 180, height: 130 },
+        targetLabel: 'FOOD PREPARATION SINK STATION SK-03',
+        layer: 'A-PLUMB',
+        confidenceScore: 0.94
+      },
+      {
+        id: 'REST-DEF-003',
+        title: 'Dining Room Table Aisle Width Fails ADA Wheelchair Access',
+        discipline: 'Accessibility',
+        severity: 'MAJOR',
+        status: 'FLAGGED',
+        specCode: 'ADA Standards §403 / ANSI A117.1 §902',
+        specRequirement: 'Aisles between tables and fixed banquettes in restaurant dining areas must maintain minimum clear width of 915 mm (36 inches).',
+        actualMeasured: 'Clear width between Table Cluster T-04 and T-08 measured at 720 mm',
+        deviation: '-195 mm (-21.3% restricted wheelchair access)',
+        remediation: 'Remove Table T-06 and space remaining tables to guarantee continuous 950 mm clear path to restrooms.',
+        storyNarrative: 'Patrons using wheelchairs or walking canes cannot safely reach their tables or emergency exit doors without asking other guests to stand.',
+        boundingBox: { x: 260, y: 460, width: 310, height: 220 },
+        targetLabel: 'MAIN DINING SALON TABLE AISLES',
+        layer: 'A-FURN',
+        confidenceScore: 0.91
+      }
+    ],
+    specs: [
+      {
+        id: 'REST-RULE-01',
+        code: 'NFPA-96-HOOD',
+        category: 'Fire Safety',
+        title: 'Type-1 Commercial Kitchen Hood Overhang',
+        requirement: 'Overhang ≥ 150 mm on open sides',
+        status: 'FAIL',
+        matchedEntitiesCount: 2,
+        threshold: '≥ 150 mm'
+      },
+      {
+        id: 'REST-RULE-02',
+        code: 'FDA-FOOD-CODE',
+        category: 'Sanitation',
+        title: 'Raw Poultry to Produce Prep Separation',
+        requirement: 'Distance ≥ 1,200 mm or Splash Shield Present',
+        status: 'FAIL',
+        matchedEntitiesCount: 3,
+        threshold: '≥ 1,200 mm / Shield'
+      },
+      {
+        id: 'REST-RULE-03',
+        code: 'ADA-403-AISLE',
+        category: 'Accessibility',
+        title: 'Dining Room Table Aisle Clear Width',
+        requirement: 'Clear width ≥ 915 mm (36 inches)',
+        status: 'FAIL',
+        matchedEntitiesCount: 8,
+        threshold: '≥ 915 mm'
+      },
+      {
+        id: 'REST-RULE-04',
+        code: 'IMC-506-GREASE',
+        category: 'Mechanical',
+        title: 'Grease Duct Fire-Rated Shaft Enclosure',
+        requirement: '2-hour fire rated shaft with cleanout access doors',
+        status: 'PASS',
+        matchedEntitiesCount: 1,
+        threshold: '2-Hour Pass'
+      }
+    ],
+    cadEntities: [
+      { id: 'b-w1', type: 'wall', layer: 'A-WALL', x: 100, y: 80, x2: 1300, y2: 80 },
+      { id: 'b-w2', type: 'wall', layer: 'A-WALL', x: 1300, y: 80, x2: 1300, y2: 780 },
+      { id: 'b-w3', type: 'wall', layer: 'A-WALL', x: 1300, y: 780, x2: 100, y2: 780 },
+      { id: 'b-w4', type: 'wall', layer: 'A-WALL', x: 100, y: 780, x2: 100, y2: 80 },
+
+      // Partition separating Kitchen (Back of house) and Dining (Front of house)
+      { id: 'b-w5', type: 'wall', layer: 'A-WALL', x: 680, y: 80, x2: 680, y2: 780 },
+
+      // Dining Room & Bar
+      { id: 'b-r1', type: 'room', layer: 'A-ROOM', x: 120, y: 100, width: 540, height: 280, label: 'COCKTAIL BAR & LOUNGE' },
+      { id: 'b-r2', type: 'room', layer: 'A-ROOM', x: 120, y: 400, width: 540, height: 360, label: 'MAIN DINING SALON' },
+
+      // Commercial Kitchen
+      { id: 'b-r3', type: 'room', layer: 'A-ROOM', x: 700, y: 100, width: 280, height: 260, label: 'HOT COOKLINE & RANGE HOOD' },
+      { id: 'b-r4', type: 'room', layer: 'A-ROOM', x: 1000, y: 100, width: 280, height: 260, label: 'FOOD PREP & VEGETABLE SINKS' },
+      { id: 'b-r5', type: 'room', layer: 'A-ROOM', x: 700, y: 380, width: 280, height: 380, label: 'SCULLERY & DISHWASHING' },
+      { id: 'b-r6', type: 'room', layer: 'A-ROOM', x: 1000, y: 380, width: 280, height: 380, label: 'WALK-IN COLD ROOMS (-18°C)' },
+
+      // Kitchen Hood Equipment
+      { id: 'b-hd', type: 'equipment', layer: 'M-HVAC', x: 760, y: 160, width: 180, height: 100, label: 'TYPE-1 RANGE HOOD C-01' },
+
+      // Dining Tables
+      { id: 't1', type: 'table', layer: 'A-FURN', x: 220, y: 480, width: 60, height: 60, label: 'TABLE 1' },
+      { id: 't2', type: 'table', layer: 'A-FURN', x: 340, y: 480, width: 60, height: 60, label: 'TABLE 2' },
+      { id: 't3', type: 'table', layer: 'A-FURN', x: 460, y: 480, width: 60, height: 60, label: 'TABLE 3' },
+      { id: 't4', type: 'table', layer: 'A-FURN', x: 220, y: 600, width: 60, height: 60, label: 'TABLE 4' },
+      { id: 't5', type: 'table', layer: 'A-FURN', x: 340, y: 600, width: 60, height: 60, label: 'TABLE 5' }
+    ]
+  },
+
+  // 3. CORPORATE OFFICE TOWER
+  {
+    id: 'corporate-office',
+    name: 'Nexus Financial Tower — Level 18 Executive Suite',
+    facilityType: 'Corporate Office Tower',
+    filename: 'NEXUS-TOWER-L18-OFFICE-PLAN.dxf',
+    fileType: 'dxf',
+    dimensions: {
+      width: 1400,
+      height: 900,
+      scaleLabel: '1:75 Metric',
+      unit: 'mm',
+      realWidthMm: 105000,
+      realHeightMm: 67500,
+    },
+    specDocument: {
+      title: 'IBC 2024 Group B (Business) & OSHA 1910.36 Emergency Exit Egress Standards',
+      authority: 'Occupational Safety and Health Administration / High-Rise Fire Safety Board',
+      version: 'IBC-2024-GROUP-B',
+      summary: 'Occupant load exit capacity, minimum separation of required exit stairwells, conference room exit door swing directions, and server room fire gas containment.'
+    },
+    storyNarrative: {
+      summary: 'High-rise 18th floor corporate office floor plate comprising open workstation collaborative zones, 8 private executive suites, a 24-person executive boardroom, and a server data closet.',
+      spatialFlow: 'Elevator core discharges into an open reception gallery. Perimeter perimeter windows house executive suites, while internal zones feature open desking pods and breakout collaboration booths.',
+      safetyRisk: 'CRITICAL HIGH-RISE CODE VIOLATION: The executive boardroom (rated for 28 occupants) has an exit door swinging INWARD against the direction of emergency egress (IBC §1010.1.2.1 mandates outward swing for rooms with $\ge 50$ occupants or hazardous assembly). Additionally, the travel distance from southwest open desking to the nearest exit stair measures 76 meters (code limit is 60 meters).',
+      logisticalEfficiency: 'Floor daylight penetration reaches 88% of all desks. Acoustic separation between conference rooms and open desking meets LEED v4 standards.',
+      keyFindings: [
+        'Boardroom D-18 exit door swings inward against the path of emergency egress.',
+        'Travel distance from Southwest Desking Pod to Exit Stair A is 76.2 m (Code limit: 60.0 m without smoke dampers).',
+        'ADA corridor width along Server Room corridor maintains full compliance at 1,820 mm.'
+      ]
+    },
+    defects: [
+      {
+        id: 'OFF-DEF-001',
+        title: 'Executive Boardroom Door Swings Inward Against Egress Path',
+        discipline: 'LifeSafety',
+        severity: 'CRITICAL',
+        status: 'FLAGGED',
+        specCode: 'IBC §1010.1.2.1 / NFPA 101 §7.2.1.4.2',
+        specRequirement: 'Exit doors serving rooms with occupant load $\ge 20$ or assembly spaces must swing outward in the direction of emergency egress travel.',
+        actualMeasured: 'Door D-18 configured with 90° inward swing into the conference room',
+        deviation: 'Illegal inward door swing blocking egress',
+        remediation: 'Reverse door hinge mounting to swing outward into circulation alcove with recessed threshold.',
+        storyNarrative: 'In a fire evacuation, panicked occupants pressing against the door will trap the inward-swinging door leaf shut, causing lethal exit crush.',
+        boundingBox: { x: 320, y: 460, width: 220, height: 160 },
+        targetLabel: 'EXECUTIVE BOARDROOM 1802',
+        layer: 'A-DOOR',
+        confidenceScore: 0.96
+      },
+      {
+        id: 'OFF-DEF-002',
+        title: 'Travel Distance to Fire Exit Stairwell Exceeds 60m High-Rise Ceiling',
+        discipline: 'LifeSafety',
+        severity: 'CRITICAL',
+        status: 'FLAGGED',
+        specCode: 'IBC §1017.2 Exit Access Travel Distance',
+        specRequirement: 'Maximum travel distance to certified pressurized fire stairwell must not exceed 60.0 meters (200 feet).',
+        actualMeasured: 'Measured path of travel from Pod SW-04: 76.2 meters',
+        deviation: '+16.2 m (+27.0% excessive egress journey)',
+        remediation: 'Provide pressurized secondary egress vestibule connection to Core Stair B.',
+        storyNarrative: 'Occupants during a high-rise fire condition cannot safely reach protected stair enclosure within allowable air quality times.',
+        boundingBox: { x: 860, y: 480, width: 260, height: 220 },
+        targetLabel: 'SOUTHWEST OPEN DESKING POD SW-04',
+        layer: 'LIFE-SAFETY',
+        confidenceScore: 0.93
+      }
+    ],
+    specs: [
+      {
+        id: 'OFF-RULE-01',
+        code: 'IBC-1010-SWING',
+        category: 'Egress Doors',
+        title: 'Conference Room Door Swing Direction',
+        requirement: 'Outward swing in direction of travel',
+        status: 'FAIL',
+        matchedEntitiesCount: 2,
+        threshold: 'Outward Swing'
+      },
+      {
+        id: 'OFF-RULE-02',
+        code: 'IBC-1017-TRAVEL',
+        category: 'Egress Travel',
+        title: 'Maximum Travel Distance to Exit Stair',
+        requirement: 'Distance ≤ 60.0 m',
+        status: 'FAIL',
+        matchedEntitiesCount: 3,
+        threshold: '≤ 60.0 m'
+      },
+      {
+        id: 'OFF-RULE-03',
+        code: 'ADA-404-WIDTH',
+        category: 'Accessibility',
+        title: 'Office Primary Corridor Width',
+        requirement: 'Clear width ≥ 1,525 mm',
+        status: 'PASS',
+        matchedEntitiesCount: 6,
+        threshold: '≥ 1,525 mm'
+      }
+    ],
+    cadEntities: [
+      { id: 'of-w1', type: 'wall', layer: 'A-WALL', x: 100, y: 80, x2: 1300, y2: 80 },
+      { id: 'of-w2', type: 'wall', layer: 'A-WALL', x: 1300, y: 80, x2: 1300, y2: 780 },
+      { id: 'of-w3', type: 'wall', layer: 'A-WALL', x: 1300, y: 780, x2: 100, y2: 780 },
+      { id: 'of-w4', type: 'wall', layer: 'A-WALL', x: 100, y: 780, x2: 100, y2: 80 },
+
+      // Central elevator core
+      { id: 'of-cr', type: 'room', layer: 'A-ROOM', x: 540, y: 260, width: 320, height: 260, label: 'ELEVATOR & PRESSURIZED STAIR CORE' },
+
+      // Boardroom
+      { id: 'of-r1', type: 'room', layer: 'A-ROOM', x: 140, y: 440, width: 360, height: 300, label: 'EXECUTIVE BOARDROOM 1802' },
+
+      // Open desking pods
+      { id: 'of-r2', type: 'room', layer: 'A-ROOM', x: 140, y: 120, width: 360, height: 280, label: 'RECEPTION & COLLABORATION LOUNGE' },
+      { id: 'of-r3', type: 'room', layer: 'A-ROOM', x: 900, y: 120, width: 360, height: 280, label: 'EXECUTIVE SUITES 1810-1815' },
+      { id: 'of-r4', type: 'room', layer: 'A-ROOM', x: 900, y: 440, width: 360, height: 300, label: 'SOUTHWEST OPEN DESKING POD SW-04' }
+    ]
+  },
+
+  // 4. HOSPITAL SURGICAL & ICU PAVILION
   {
     id: 'hospital-icu',
     name: 'St. Jude Level-4 Surgical & ICU Pavilion',
@@ -83,40 +520,6 @@ export const INITIAL_DATASETS: BlueprintDataset[] = [
         targetLabel: 'CT RADIOLOGY & SCAN SUITE',
         layer: 'A-WALL-RAD',
         confidenceScore: 0.94
-      },
-      {
-        id: 'DEF-004',
-        title: 'Surgical Scrub Sink Protrudes into Clean Corridor Clearance',
-        discipline: 'Architectural',
-        severity: 'MAJOR',
-        status: 'FLAGGED',
-        specCode: 'AIA Guidelines §7.2 / ADA §307.2',
-        specRequirement: 'Wall-mounted scrub stations and alcoves must not encroach more than 100 mm into required clean corridor boundary.',
-        actualMeasured: 'Scrub sink trough protrudes 420 mm into primary passage',
-        deviation: '+320 mm illegal projection into pedestrian path',
-        remediation: 'Recess scrub sink unit into 450 mm wall alcove cavity A-ALC-02.',
-        storyNarrative: 'Sterile surgical staff scrubbing in are exposed to brushing contacts from passing supply carts, contaminating sterile field prep.',
-        boundingBox: { x: 570, y: 270, width: 90, height: 60 },
-        targetLabel: 'SCRUB STATION ALCOVE #2',
-        layer: 'A-PLUMB',
-        confidenceScore: 0.91
-      },
-      {
-        id: 'DEF-005',
-        title: 'Nurse Station Blindspot to Recovery Bed Bays 7 & 8',
-        discipline: 'Architectural',
-        severity: 'MINOR',
-        status: 'FLAGGED',
-        specCode: 'FGI §2.1-2.2.1 Visual Observation Standard',
-        specRequirement: 'Direct uninterrupted visual line-of-sight required from central nursing post to all patient heads in intensive care pods.',
-        actualMeasured: 'Sightline blocked by mechanical shaft chase M-04',
-        deviation: '0% direct sightline from primary console',
-        remediation: 'Install redundant decentralized telemetry video display or mirror station at sub-station Pod B.',
-        storyNarrative: 'Unmonitored patient beds present delayed response risks during extubation emergencies.',
-        boundingBox: { x: 1010, y: 440, width: 130, height: 110 },
-        targetLabel: 'RECOVERY BAYS 7 & 8',
-        layer: 'A-FURN',
-        confidenceScore: 0.88
       }
     ],
     specs: [
@@ -149,76 +552,31 @@ export const INITIAL_DATASETS: BlueprintDataset[] = [
         status: 'FAIL',
         matchedEntitiesCount: 4,
         threshold: '≥ 2.0 mm Pb'
-      },
-      {
-        id: 'RULE-04',
-        code: 'ADA-307.2-PROTR',
-        category: 'Accessibility & Safety',
-        title: 'Wall Protruding Objects in Circulation Corridors',
-        requirement: 'Maximum encroachment ≤ 100 mm (4")',
-        status: 'FAIL',
-        matchedEntitiesCount: 2,
-        threshold: '≤ 100 mm'
-      },
-      {
-        id: 'RULE-05',
-        code: 'NFPA-99-MEDGAS',
-        category: 'Medical Gas Systems',
-        title: 'Zone Valve Box Clearance & Emergency Access',
-        requirement: 'Unobstructed 900 mm front maintenance envelope',
-        status: 'PASS',
-        matchedEntitiesCount: 6,
-        threshold: '≥ 900 mm'
-      },
-      {
-        id: 'RULE-06',
-        code: 'FGI-2.1-3.1.5',
-        category: 'Sterile Core Integrity',
-        title: 'Positive Pressure Airflow Gradient into OR Theaters',
-        requirement: 'Class 10,000 ISO 7 filtration with sealed perimeter seals',
-        status: 'PASS',
-        matchedEntitiesCount: 8,
-        threshold: 'ISO 7 Pass'
       }
     ],
     cadEntities: [
-      // Outer perimeter walls
       { id: 'w1', type: 'wall', layer: 'A-WALL', x: 100, y: 80, x2: 1300, y2: 80 },
       { id: 'w2', type: 'wall', layer: 'A-WALL', x: 1300, y: 80, x2: 1300, y2: 780 },
       { id: 'w3', type: 'wall', layer: 'A-WALL', x: 1300, y: 780, x2: 100, y2: 780 },
       { id: 'w4', type: 'wall', layer: 'A-WALL', x: 100, y: 780, x2: 100, y2: 80 },
-      
-      // Corridors & partitions
       { id: 'w5', type: 'wall', layer: 'A-WALL', x: 380, y: 80, x2: 380, y2: 450 },
       { id: 'w6', type: 'wall', layer: 'A-WALL', x: 380, y: 520, x2: 380, y2: 780 },
       { id: 'w7', type: 'wall', layer: 'A-WALL', x: 760, y: 80, x2: 760, y2: 380 },
       { id: 'w8', type: 'wall', layer: 'A-WALL', x: 760, y: 455, x2: 760, y2: 780 },
-      
-      // Narrow Corridor violation zone
       { id: 'w9', type: 'wall', layer: 'A-WALL', x: 420, y: 380, x2: 760, y2: 380 },
       { id: 'w10', type: 'wall', layer: 'A-WALL', x: 420, y: 455, x2: 760, y2: 455 },
 
-      // Rooms
       { id: 'r1', type: 'room', layer: 'A-ROOM', x: 120, y: 100, width: 240, height: 260, label: 'CT SCAN SUITE 101' },
       { id: 'r2', type: 'room', layer: 'A-ROOM', x: 120, y: 480, width: 240, height: 280, label: 'STERILE SURGICAL CORE' },
       { id: 'r3', type: 'room', layer: 'A-ROOM', x: 780, y: 100, width: 220, height: 260, label: 'ICU-04 (AIIR ISOLATION)' },
       { id: 'r4', type: 'room', layer: 'A-ROOM', x: 1020, y: 100, width: 260, height: 260, label: 'ICU-05 TRAUMA' },
-      { id: 'r5', type: 'room', layer: 'A-ROOM', x: 780, y: 480, width: 220, height: 280, label: 'NURSE MONITORING HUB' },
-      { id: 'r6', type: 'room', layer: 'A-ROOM', x: 1020, y: 480, width: 260, height: 280, label: 'RECOVERY BEDS 7 & 8' },
 
-      // Medical equipment & beds
       { id: 'e1', type: 'equipment', layer: 'E-EQUIP', x: 200, y: 200, width: 80, height: 80, label: 'CT GANTRY 140kVp' },
-      { id: 'b1', type: 'bed', layer: 'A-FURN', x: 840, y: 180, width: 70, height: 110, label: 'BED 04' },
-      { id: 'b2', type: 'bed', layer: 'A-FURN', x: 1080, y: 180, width: 70, height: 110, label: 'BED 05' },
-      { id: 'b3', type: 'bed', layer: 'A-FURN', x: 1050, y: 560, width: 60, height: 90, label: 'BED 07' },
-      { id: 'b4', type: 'bed', layer: 'A-FURN', x: 1180, y: 560, width: 60, height: 90, label: 'BED 08' },
-
-      // Doors
-      { id: 'd1', type: 'door', layer: 'A-DOOR', x: 380, y: 470, width: 30, height: 30, rotation: 90, label: 'D-101' },
-      { id: 'd2', type: 'door', layer: 'A-DOOR', x: 760, y: 400, width: 30, height: 30, rotation: 90, label: 'D-102' },
-      { id: 'd3', type: 'door', layer: 'A-DOOR', x: 880, y: 360, width: 30, height: 30, rotation: 0, label: 'D-ICU4' }
+      { id: 'b1', type: 'bed', layer: 'A-FURN', x: 840, y: 180, width: 70, height: 110, label: 'BED 04' }
     ]
   },
+
+  // 5. BIOPHARMA LOGISTICS WAREHOUSE
   {
     id: 'pharma-warehouse',
     name: 'Apex BioLogistics Central High-Bay Warehouse',
@@ -228,26 +586,25 @@ export const INITIAL_DATASETS: BlueprintDataset[] = [
     dimensions: {
       width: 1400,
       height: 900,
-      scaleLabel: '1:100 Metric (1mm = 100mm)',
+      scaleLabel: '1:100 Metric',
       unit: 'mm',
       realWidthMm: 140000,
       realHeightMm: 90000,
     },
     specDocument: {
       title: 'WHO GDP Annex 5 & OSHA 1910.22/1910.151 Warehouse Safety Specification',
-      authority: 'World Health Organization / US Occupational Safety and Health Administration',
+      authority: 'World Health Organization / OSHA',
       version: 'Rev-2023.B',
-      summary: 'Operational safety, cold-chain integrity, high-bay forklift aisle clearances, emergency shower distances, and egress travel path constraints for pharmaceutical storage.'
+      summary: 'Operational safety, forklift aisle clearances, emergency shower distances, and egress travel path constraints for pharmaceutical storage.'
     },
     storyNarrative: {
-      summary: 'High-cube pharmaceutical distribution facility handling -80°C ultra-cold vaccines, hazardous medical solvent staging, and automated reach-truck palletizing.',
-      spatialFlow: 'Material arrives via North receiving docks, undergoes quarantine sampling in Bay 1, then branches into either cold-vault storage or automated ambient racking before outbound packaging at South docks.',
-      safetyRisk: 'CRITICAL LIFE SAFETY & COMPLIANCE DEFICIT: High-bay forklift aisles have been compressed to 2,650mm, which creates immediate crush and racking impact hazards for standard 3,500mm counter-balance forklifts. Emergency eyewash access from the battery charging area exceeds maximum travel distance by 66%.',
-      logisticalEfficiency: 'Dock-to-vault transit is direct (average 42 seconds cycle time), but pallet staging blocks the main western fire egress route during peak staging operations.',
+      summary: 'High-cube pharmaceutical distribution facility handling -80°C ultra-cold vaccines, hazardous solvent staging, and automated reach-truck palletizing.',
+      spatialFlow: 'Material arrives via North receiving docks, undergoes quarantine sampling, then branches into cold-vault storage or automated ambient racking.',
+      safetyRisk: 'CRITICAL LIFE SAFETY: High-bay forklift aisles have been compressed to 2,650mm (need 3,500mm). Eyewash access from battery charging area is 28m away (OSHA limit 16.8m).',
+      logisticalEfficiency: 'Dock-to-vault transit is direct, but pallet staging blocks the main western fire egress route during peak staging operations.',
       keyFindings: [
-        'Aisle width between Racks R-03 and R-04 is 2,650 mm (Spec requires ≥ 3,500 mm).',
-        'Chemical Battery Charging Bay eyewash station travel distance is 28.2 m (OSHA max 16.8 m / 55 ft).',
-        'Maximum fire travel distance from Deep Freeze Vault to Exit NW is 78.4 m (NFPA 101 ceiling is 60 m).'
+        'Aisle width between Racks is 2,650 mm (Spec requires ≥ 3,500 mm).',
+        'Chemical Battery Charging Bay eyewash station travel distance is 28.2 m (OSHA max 16.8 m).'
       ]
     },
     defects: [
@@ -257,50 +614,16 @@ export const INITIAL_DATASETS: BlueprintDataset[] = [
         discipline: 'LifeSafety',
         severity: 'CRITICAL',
         status: 'FLAGGED',
-        specCode: 'OSHA 1910.176(a) / ANSI B56.1 Racking Clearance',
-        specRequirement: 'Aisles where mechanical handling equipment operates must maintain minimum clear width of 3,500 mm (or truck turn radius + 600 mm buffer).',
+        specCode: 'OSHA 1910.176(a) / ANSI B56.1',
+        specRequirement: 'Aisles where mechanical handling equipment operates must maintain minimum clear width of 3,500 mm.',
         actualMeasured: 'Clear width measured at 2,650 mm along Aisle B',
         deviation: '-850 mm (-24.2% hazardous pinch point)',
-        remediation: 'Re-space Rack Rows R-03 and R-04 westward by 900 mm or mandate wire-guided VNA (Very Narrow Aisle) turrets exclusively.',
-        storyNarrative: 'Standard counterbalance forklifts turning with loaded 1,200x1,000 mm Euro-pallets will inevitably impact rack upright columns, causing structural rack collapse risks.',
+        remediation: 'Re-space Rack Rows westward by 900 mm to restore safe reach-truck turning envelope.',
+        storyNarrative: 'Forklifts turning with loaded pallets will inevitably impact rack upright columns, causing catastrophic rack collapse.',
         boundingBox: { x: 490, y: 220, width: 230, height: 360 },
         targetLabel: 'HIGH-BAY AISLE B (RACKS 3 & 4)',
         layer: 'A-RACK',
         confidenceScore: 0.97
-      },
-      {
-        id: 'WH-DEF-002',
-        title: 'Emergency Eyewash & Drench Shower Exceeds Travel Distance Limit',
-        discipline: 'LifeSafety',
-        severity: 'MAJOR',
-        status: 'FLAGGED',
-        specCode: 'OSHA 1910.151(c) / ANSI Z358.1 §5.5.2',
-        specRequirement: 'Eyewash stations in hazardous battery charging & electrolyte zones must be accessible within 10 seconds unobstructed travel (≤ 16.8 m / 55 ft).',
-        actualMeasured: 'Measured travel distance: 28.2 meters to station EW-01',
-        deviation: '+11.4 m (+67.8% beyond legal safety threshold)',
-        remediation: 'Install dedicated plumbed emergency eyewash pedestal directly at Column Grid F-12 within 10 meters of battery charging bench.',
-        storyNarrative: 'An employee splashed with corrosive battery acid or toxic solvent cannot reach decontamination within the critical 10-second chemical burn window.',
-        boundingBox: { x: 180, y: 560, width: 190, height: 160 },
-        targetLabel: 'BATTERY CHARGING & CHEMICAL BAY',
-        layer: 'M-PLUMB',
-        confidenceScore: 0.95
-      },
-      {
-        id: 'WH-DEF-003',
-        title: 'Fire Egress Travel Distance Exceeds Code Limit from Cold Vault',
-        discipline: 'LifeSafety',
-        severity: 'CRITICAL',
-        status: 'FLAGGED',
-        specCode: 'NFPA 101 §40.2.6 Industrial Occupancy',
-        specRequirement: 'Maximum common path of travel to nearest emergency exit in industrial storage must not exceed 60 meters (200 ft).',
-        actualMeasured: 'Actual egress path length: 78.4 meters through staging corridor',
-        deviation: '+18.4 m (+30.6% excessive egress journey)',
-        remediation: 'Knock out external precast panel on West Wall to install illuminated emergency exit door EXIT-W3 with panic hardware.',
-        storyNarrative: 'Workers in the -80°C deep freeze vault trapped by an aisle fire cannot safely escape within allowable smoke clearance margins.',
-        boundingBox: { x: 880, y: 140, width: 280, height: 260 },
-        targetLabel: '-80°C ULTRA-COLD VAULT',
-        layer: 'LIFE-SAFETY',
-        confidenceScore: 0.93
       }
     ],
     specs: [
@@ -309,216 +632,109 @@ export const INITIAL_DATASETS: BlueprintDataset[] = [
         code: 'OSHA-1910.176',
         category: 'Material Handling',
         title: 'Mechanical Handling Equipment Aisle Clearance',
-        requirement: 'Clear width ≥ 3,500 mm for dual-way reach trucks',
+        requirement: 'Clear width ≥ 3,500 mm',
         status: 'FAIL',
         matchedEntitiesCount: 4,
         threshold: '≥ 3,500 mm'
-      },
-      {
-        id: 'WH-RULE-02',
-        code: 'ANSI-Z358.1',
-        category: 'Hazardous Chemical',
-        title: 'Emergency Shower & Eyewash Maximum Travel Distance',
-        requirement: 'Travel distance ≤ 16.8 m (10 seconds walk)',
-        status: 'FAIL',
-        matchedEntitiesCount: 2,
-        threshold: '≤ 16.8 m'
-      },
-      {
-        id: 'WH-RULE-03',
-        code: 'NFPA-101-EGRESS',
-        category: 'Life Safety Egress',
-        title: 'Maximum Travel Distance to Fire Exit',
-        requirement: 'Distance ≤ 60 m to certified egress door',
-        status: 'FAIL',
-        matchedEntitiesCount: 3,
-        threshold: '≤ 60 m'
-      },
-      {
-        id: 'WH-RULE-04',
-        code: 'WHO-GDP-ANNEX5',
-        category: 'Cold-Chain Integrity',
-        title: 'Receiving Dock Thermal Air Curtain Barrier',
-        requirement: 'Airlock seal maintaining +2°C to +8°C buffer integrity',
-        status: 'PASS',
-        matchedEntitiesCount: 5,
-        threshold: 'Dual Air Curtain'
       }
     ],
     cadEntities: [
       { id: 'wh-p1', type: 'wall', layer: 'A-WALL', x: 120, y: 100, x2: 1280, y2: 100 },
       { id: 'wh-p2', type: 'wall', layer: 'A-WALL', x: 1280, y: 100, x2: 1280, y2: 780 },
       { id: 'wh-p3', type: 'wall', layer: 'A-WALL', x: 1280, y: 780, x2: 120, y2: 780 },
-      { id: 'wh-p4', type: 'wall', layer: 'A-WALL', x: 120, y: 780, x2: 120, y2: 100 },
-
-      // Racks
-      { id: 'rk1', type: 'equipment', layer: 'A-RACK', x: 420, y: 200, width: 60, height: 420, label: 'RACK ROW 01' },
-      { id: 'rk2', type: 'equipment', layer: 'A-RACK', x: 500, y: 200, width: 60, height: 420, label: 'RACK ROW 02' },
-      { id: 'rk3', type: 'equipment', layer: 'A-RACK', x: 640, y: 200, width: 60, height: 420, label: 'RACK ROW 03' },
-      { id: 'rk4', type: 'equipment', layer: 'A-RACK', x: 720, y: 200, width: 60, height: 420, label: 'RACK ROW 04' },
-
-      // Rooms
-      { id: 'wh-r1', type: 'room', layer: 'A-ROOM', x: 140, y: 520, width: 240, height: 240, label: 'BATTERY CHARGING & CHEMICALS' },
-      { id: 'wh-r2', type: 'room', layer: 'A-ROOM', x: 860, y: 120, width: 380, height: 280, label: '-80°C ULTRA-COLD VAULT' },
-      { id: 'wh-r3', type: 'room', layer: 'A-ROOM', x: 860, y: 440, width: 380, height: 320, label: 'STAGING & PACKAGING BAY' },
-      { id: 'wh-r4', type: 'room', layer: 'A-ROOM', x: 140, y: 120, width: 240, height: 360, label: 'NORTH RECEIVING DOCK' }
-    ]
-  },
-  {
-    id: 'radiology-suite',
-    name: 'Metro Health Advanced MRI & Diagnostic Pavilion',
-    facilityType: 'Radiology & Imaging Suite',
-    filename: 'METRO-RAD-SUITE-3T-ARCH.dxf',
-    fileType: 'dxf',
-    dimensions: {
-      width: 1400,
-      height: 900,
-      scaleLabel: '1:50 Metric',
-      unit: 'mm',
-      realWidthMm: 56000,
-      realHeightMm: 36000,
-    },
-    specDocument: {
-      title: 'ACR Guidance Document on MR Safe Practices & ADA Accessible Design',
-      authority: 'American College of Radiology / US Department of Justice (ADA)',
-      version: '2023 Update',
-      summary: 'Strict magnet fringe field exclusion containment (5-Gauss line), RF shielding enclosure specs, quench emergency exhaust venting, and ADA wheelchair turning envelopes.'
-    },
-    storyNarrative: {
-      summary: 'Specialized diagnostic imaging suite housing a 3.0 Tesla ultra-high-field MRI scanner, PET-CT diagnostic suite, patient prep cubicles, and technologist control gallery.',
-      spatialFlow: 'Strict ACR 4-Zone progression: Zone I (Public street access) -> Zone II (Supervised waiting & screening) -> Zone III (Restricted MR console & dressing) -> Zone IV (MR Magnet room).',
-      safetyRisk: 'CRITICAL FERROMAGNETIC HAZARD: The fringe magnetic 5-Gauss line spills 650mm beyond the shielded Faraday cage wall into the public Zone II corridor, risking fatal projectile acceleration or pacemaker disruption for unsuspecting visitors.',
-      logisticalEfficiency: 'Patient changeroom turnover rate is well-matched with scan time, but ADA accessible restroom fails 1,525mm wheelchair turning clearance by 205mm.',
-      keyFindings: [
-        '3T Magnet 5-Gauss line projects into unsupervised public waiting corridor.',
-        'Restroom 102 fails ADA §304.3.1 turning circle clearance (1,320 mm actual vs 1,525 mm required).',
-        'Helium quench pipe route intersects central HVAC return without acoustic separation.'
-      ]
-    },
-    defects: [
-      {
-        id: 'RAD-DEF-001',
-        title: '3-Tesla MRI 5-Gauss Magnetic Boundary Spills Into Public Corridor',
-        discipline: 'HealthcareEquipment',
-        severity: 'CRITICAL',
-        status: 'FLAGGED',
-        specCode: 'ACR MR Safety Manual §Zone-IV Perimeter',
-        specRequirement: 'The 5-Gauss (0.5 mT) static magnetic fringe field must remain 100% contained within the locked RF-shielded Zone IV scan room perimeter.',
-        actualMeasured: '5-Gauss boundary projects 650 mm through wall into Zone II corridor',
-        deviation: '+650 mm hazardous electromagnetic spillover',
-        remediation: 'Install passive silicon steel plate magnetic shielding (min 12mm thickness) on East partition wall W-RAD-04 to pull 5-Gauss line inside.',
-        storyNarrative: 'Any passerby with a cardiac pacemaker or ferromagnetic aneurysm clip walking through the public hallway could experience fatal device malfunction or tissue tear.',
-        boundingBox: { x: 580, y: 160, width: 220, height: 180 },
-        targetLabel: '3.0T MAGNET 5-GAUSS FRINGE ZONE',
-        layer: 'E-MAG',
-        confidenceScore: 0.99
-      },
-      {
-        id: 'RAD-DEF-002',
-        title: 'Restroom Wheelchair Turning Radius Fails ADA Compliance',
-        discipline: 'Accessibility',
-        severity: 'MAJOR',
-        status: 'FLAGGED',
-        specCode: 'ADA Standards §304.3.1 Turning Space',
-        specRequirement: 'Accessible patient bathrooms must provide an unobstructed circular turning space with a minimum diameter of 1,525 mm (60").',
-        actualMeasured: 'Clear circular space diameter measured at 1,320 mm',
-        deviation: '-205 mm (-13.4% restricted wheelchair maneuverability)',
-        remediation: 'Replace floor-mounted vanity cabinet with wall-hung ADA lavatory and swing door outward into vestibule.',
-        storyNarrative: 'Paraplegic and mobility-impaired patients in wheelchairs cannot perform a safe 360-degree pivot inside the bathroom, risking falls.',
-        boundingBox: { x: 210, y: 530, width: 140, height: 130 },
-        targetLabel: 'PATIENT ADA RESTROOM 102',
-        layer: 'A-RESTROOM',
-        confidenceScore: 0.93
-      }
-    ],
-    specs: [
-      {
-        id: 'RAD-RULE-01',
-        code: 'ACR-ZONE-IV',
-        category: 'Magnetic Safety',
-        title: '5-Gauss Magnetic Fringe Containment',
-        requirement: '5-Gauss line completely contained within Zone IV room',
-        status: 'FAIL',
-        matchedEntitiesCount: 1,
-        threshold: '100% Contained'
-      },
-      {
-        id: 'RAD-RULE-02',
-        code: 'ADA-304.3.1',
-        category: 'Accessibility',
-        title: 'Wheelchair 60-inch Turning Circle',
-        requirement: 'Diameter ≥ 1,525 mm (60")',
-        status: 'FAIL',
-        matchedEntitiesCount: 2,
-        threshold: '≥ 1,525 mm'
-      },
-      {
-        id: 'RAD-RULE-03',
-        code: 'ASME-QUENCH-PIPE',
-        category: 'Cryogenic Safety',
-        title: 'Helium Emergency Quench Exhaust Ducting',
-        requirement: 'Independent dedicated direct-to-roof stainless pipe',
-        status: 'PASS',
-        matchedEntitiesCount: 1,
-        threshold: 'Direct Roof Vent'
-      }
-    ],
-    cadEntities: [
-      { id: 'rad-p1', type: 'wall', layer: 'A-WALL', x: 100, y: 100, x2: 1250, y2: 100 },
-      { id: 'rad-p2', type: 'wall', layer: 'A-WALL', x: 1250, y: 100, x2: 1250, y2: 750 },
-      { id: 'rad-p3', type: 'wall', layer: 'A-WALL', x: 1250, y: 750, x2: 100, y2: 750 },
-      { id: 'rad-p4', type: 'wall', layer: 'A-WALL', x: 100, y: 750, x2: 100, y2: 100 },
-
-      { id: 'rad-r1', type: 'room', layer: 'A-ROOM', x: 480, y: 120, width: 340, height: 320, label: '3T MRI SCANNER (ZONE IV)' },
-      { id: 'rad-r2', type: 'room', layer: 'A-ROOM', x: 480, y: 460, width: 340, height: 260, label: 'TECH CONSOLE & CONTROL ROOM' },
-      { id: 'rad-r3', type: 'room', layer: 'A-ROOM', x: 120, y: 120, width: 340, height: 360, label: 'PUBLIC WAITING (ZONE II)' },
-      { id: 'rad-r4', type: 'room', layer: 'A-ROOM', x: 120, y: 500, width: 340, height: 220, label: 'PATIENT ADA RESTROOM 102' },
-      { id: 'rad-r5', type: 'room', layer: 'A-ROOM', x: 840, y: 120, width: 390, height: 600, label: 'PET-CT & RADIOPHARM LAB' },
-
-      { id: 'rad-m1', type: 'equipment', layer: 'E-EQUIP', x: 610, y: 220, width: 110, height: 110, label: '3.0T MAGNET BORE' }
+      { id: 'wh-p4', type: 'wall', layer: 'A-WALL', x: 120, y: 780, x2: 120, y2: 100 }
     ]
   }
 ];
 
 export const INITIAL_TRAINING_SAMPLES: TrainingSample[] = [
+  // Kaggle Floor Plan Datasets
   {
-    id: 'TR-01',
-    blueprintName: 'St. Jude Level-4 Surgical Pavilion (STJ-ICU-REV3.dxf)',
-    specName: 'FGI 2022 Guidelines & NFPA-101 Life Safety Code',
-    annotatedDefectsCount: 5,
+    id: 'TR-KAG-01',
+    blueprintName: 'Kaggle: CVC-FP Floor Plan Semantic Benchmark',
+    specName: 'IBC 2024 International Building Code & Architectural Standards',
+    annotatedDefectsCount: 120,
     status: 'ground_truth',
-    verifiedAccuracy: 0.96
+    verifiedAccuracy: 0.96,
+    source: 'Kaggle: CVC-FP',
+    domain: 'Commercial & Retail',
+    description: 'Pixel-level semantic segmentation vectors for rooms, structural walls, corridors, and partition boundaries across 120 commercial floor plans.'
   },
   {
-    id: 'TR-02',
-    blueprintName: 'Apex BioLogistics Central High-Bay (APEX-WH-02.dxf)',
-    specName: 'WHO GDP Annex 5 & OSHA 1910 Industrial Standards',
+    id: 'TR-KAG-02',
+    blueprintName: 'Kaggle: FloorPlans-500 Architectural Object Detection',
+    specName: 'NFPA 101 Life Safety Egress Doors & Hazard Enclosures',
+    annotatedDefectsCount: 500,
+    status: 'ground_truth',
+    verifiedAccuracy: 0.97,
+    source: 'Kaggle: FloorPlans-500',
+    domain: 'Commercial & Retail',
+    description: 'YOLO & COCO format bounding box annotations for doors, emergency exits, retail kiosks, stairs, and escalators in covered malls.'
+  },
+  {
+    id: 'TR-KAG-03',
+    blueprintName: 'Kaggle: Tell2Design Multimodal Spatial Constraints',
+    specName: 'NFPA 96 Commercial Kitchen & ADA Restaurant Accessibility',
+    annotatedDefectsCount: 340,
+    status: 'ground_truth',
+    verifiedAccuracy: 0.94,
+    source: 'Kaggle: Tell2Design',
+    domain: 'Restaurants & Kitchens',
+    description: 'Natural language spatial specification clauses paired with 2D floor plans for dining rooms, commercial cooklines, and table aisle clearances.'
+  },
+  {
+    id: 'TR-CUBI-04',
+    blueprintName: 'CubiCasa5k Massive Architectural Vector Dataset',
+    specName: 'Universal Building Codes, Room Area Minima & Egress Paths',
+    annotatedDefectsCount: 5000,
+    status: 'ground_truth',
+    verifiedAccuracy: 0.98,
+    source: 'CubiCasa5k-Vector',
+    domain: 'Residential',
+    description: '5,000+ vector-backed floor plans complete with 80+ architectural token classes (walls, door swings, plumbing fixtures, corridors).'
+  },
+  {
+    id: 'TR-MALL-05',
+    blueprintName: 'Grand Horizon Retail Galleria & Mall (GH-MALL-L1.dxf)',
+    specName: 'IBC Chapter 4 Covered Mall Buildings & Atrium Egress',
     annotatedDefectsCount: 3,
     status: 'ground_truth',
-    verifiedAccuracy: 0.94
+    verifiedAccuracy: 0.95,
+    source: 'Benchmark-GroundTruth',
+    domain: 'Commercial & Retail',
+    description: 'Dead-end service concourse violations, rolling fire shutter clearance envelopes, and escalator discharge concourse dimensions.'
   },
   {
-    id: 'TR-03',
-    blueprintName: 'Metro Health Advanced MRI & Diagnostic (METRO-RAD-3T.dxf)',
-    specName: 'ACR MR Safety Guidance & ADA Section 304 Standards',
+    id: 'TR-REST-06',
+    blueprintName: 'Le Bistro Impérial Fine Dining & Kitchen (BISTRO-REV4.dxf)',
+    specName: 'NFPA 96 Range Hood Overhang & FDA Food Code Sanitation',
+    annotatedDefectsCount: 3,
+    status: 'ground_truth',
+    verifiedAccuracy: 0.96,
+    source: 'Benchmark-GroundTruth',
+    domain: 'Restaurants & Kitchens',
+    description: 'Commercial cooking hood overhang deficits, raw meat vs salad cross-contamination proximity, and ADA dining table aisle clearance.'
+  },
+  {
+    id: 'TR-OFF-07',
+    blueprintName: 'Nexus Corporate Headquarters Tower (NEXUS-L18.dxf)',
+    specName: 'IBC Group B Business Occupancy & OSHA 1910 Egress',
     annotatedDefectsCount: 2,
     status: 'ground_truth',
-    verifiedAccuracy: 0.98
+    verifiedAccuracy: 0.94,
+    source: 'Benchmark-GroundTruth',
+    domain: 'Offices & Corporate',
+    description: 'Conference room inward-swinging door egress hazard and high-rise exit travel distance ceiling exceedance.'
   },
   {
-    id: 'TR-04',
-    blueprintName: 'Memorial Sloan Cancer Outpatient Infusion Wing',
-    specName: 'USP 800 Hazardous Drug Handling & AIA Cleanroom Codes',
-    annotatedDefectsCount: 4,
-    status: 'augmented',
-    verifiedAccuracy: 0.91
-  },
-  {
-    id: 'TR-05',
-    blueprintName: 'Geneva BioHub Sterile Fill-Finish Production Facility',
-    specName: 'EU GMP Annex 1 Cleanroom Classification & Air Barrier',
-    annotatedDefectsCount: 6,
-    status: 'synthetic',
-    verifiedAccuracy: 0.89
+    id: 'TR-HC-08',
+    blueprintName: 'St. Jude Level-4 Surgical Pavilion (STJ-ICU-REV3.dxf)',
+    specName: 'FGI 2022 Healthcare Guidelines & NFPA-101 Life Safety Code',
+    annotatedDefectsCount: 5,
+    status: 'ground_truth',
+    verifiedAccuracy: 0.96,
+    source: 'Benchmark-GroundTruth',
+    domain: 'Healthcare',
+    description: 'Corridor width below gurney transport code, missing AIIR negative pressure airlock, and CT radiation lead shielding deficits.'
   }
 ];

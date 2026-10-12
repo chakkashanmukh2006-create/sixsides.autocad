@@ -99,7 +99,7 @@ export const App: React.FC = () => {
               </span>
             </div>
             <p className="text-[10px] text-slate-400 font-mono">
-              Architectural Blueprint & Healthcare Validation Engine
+              Universal Blueprint Validation Engine (Malls, Restaurants, Offices, Healthcare & Warehouses)
             </p>
           </div>
         </div>

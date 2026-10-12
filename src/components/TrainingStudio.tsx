@@ -1,11 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { 
-  Play, RotateCcw, CheckCircle, Flame, 
-  Cpu, Database, Sparkles, Sliders, LineChart, 
-  Layers, UploadCloud, Terminal, Award, Check
+  Play, Flame, Cpu, Database, Sliders, LineChart, 
+  Terminal, Award, Check, Filter, Layers
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
-import { TrainingSample, TrainingState, BlueprintDataset } from '../types';
+import { TrainingSample, TrainingState } from '../types';
 import { INITIAL_TRAINING_SAMPLES } from '../data/mockDatasets';
 
 interface TrainingStudioProps {
@@ -17,7 +16,8 @@ export const TrainingStudio: React.FC<TrainingStudioProps> = ({
   onDeployTrainedModel,
   activeWeights,
 }) => {
-  const [samples, setSamples] = useState<TrainingSample[]>(INITIAL_TRAINING_SAMPLES);
+  const [samples] = useState<TrainingSample[]>(INITIAL_TRAINING_SAMPLES);
+  const [selectedDomain, setSelectedDomain] = useState<string>('ALL');
   const [backbone, setBackbone] = useState<string>('Spatial-ViT-LoRA');
   const [epochs, setEpochs] = useState<number>(10);
   const [learningRate, setLearningRate] = useState<number>(0.001);
@@ -36,9 +36,10 @@ export const TrainingStudio: React.FC<TrainingStudioProps> = ({
     ],
     activeWeights: activeWeights,
     logs: [
-      '[SYSTEM]: CAD-SPEC Training Engine Initialized.',
-      `[LOAD]: Active Base Checkpoint: ${activeWeights}`,
-      '[INFO]: Ready to calibrate spatial attention layers against ground-truth blueprints.'
+      '[SYSTEM]: Universal CAD-SPEC AI Training Studio Initialized.',
+      `[LOAD]: Active Checkpoint: ${activeWeights}`,
+      '[KAGGLE]: Kaggle CVC-FP, FloorPlans-500, Tell2Design & CubiCasa5k datasets ready.',
+      '[DOMAINS]: Ready to calibrate for Shopping Malls, Restaurants, Corporate Offices, Healthcare & Residential.'
     ]
   });
 
@@ -52,6 +53,17 @@ export const TrainingStudio: React.FC<TrainingStudioProps> = ({
     }
   }, [trainingState.logs]);
 
+  // Filter training samples by domain
+  const filteredSamples = samples.filter(s => {
+    if (selectedDomain === 'ALL') return true;
+    if (selectedDomain === 'KAGGLE') return s.source.startsWith('Kaggle');
+    if (selectedDomain === 'MALLS') return s.domain === 'Commercial & Retail';
+    if (selectedDomain === 'RESTAURANTS') return s.domain === 'Restaurants & Kitchens';
+    if (selectedDomain === 'OFFICES') return s.domain === 'Offices & Corporate';
+    if (selectedDomain === 'HEALTHCARE') return s.domain === 'Healthcare';
+    return true;
+  });
+
   // Execute interactive training simulation
   const handleStartTraining = () => {
     setDeployedSuccess(false);
@@ -63,9 +75,11 @@ export const TrainingStudio: React.FC<TrainingStudioProps> = ({
       history: [],
       logs: [
         ...prev.logs,
-        `--- STARTING TRAINING RUN: ${backbone} (Epochs: ${epochs}, LR: ${learningRate}, Batch: ${batchSize}) ---`,
-        '[PIPELINE]: Ingesting multi-page blueprints & architectural rule vectors...',
-        '[AUGMENT]: Applying spatial rotations, affine scaling, layer masking...'
+        `--- INITIATING UNIVERSAL MULTI-DOMAIN TRAINING RUN: ${backbone} (Epochs: ${epochs}, LR: ${learningRate}) ---`,
+        `[DATASET]: Training across ${filteredSamples.length} active benchmark datasets (${selectedDomain} focus)...`,
+        '[KAGGLE PIPELINE]: Ingesting Kaggle CVC-FP semantic segmentation masks & FloorPlans-500 YOLO bounding boxes...',
+        '[KAGGLE PIPELINE]: Parsing Tell2Design natural language spatial specification constraints...',
+        '[AUGMENT]: Applying multi-scale rotations, affine scaling, layer masking for Malls, Restaurants, Offices & Healthcare...'
       ]
     }));
 
@@ -76,7 +90,6 @@ export const TrainingStudio: React.FC<TrainingStudioProps> = ({
       current += 1;
       const progress = current / epochs;
 
-      // Realistic decay of loss and increase in accuracy
       const trainLoss = Number((0.95 * Math.exp(-2.2 * progress) + 0.05 + (Math.random() * 0.02 - 0.01)).toFixed(4));
       const valLoss = Number((1.02 * Math.exp(-2.0 * progress) + 0.08 + (Math.random() * 0.03 - 0.015)).toFixed(4));
       const mAP = Number((0.65 + 0.32 * (1 - Math.exp(-2.5 * progress)) + (Math.random() * 0.01 - 0.005)).toFixed(3));
@@ -101,15 +114,15 @@ export const TrainingStudio: React.FC<TrainingStudioProps> = ({
 
       if (current >= epochs) {
         clearInterval(interval);
-        const newWeightTag = `v3.0-Trained-${Date.now().toString().slice(-4)}`;
+        const newWeightTag = `v3.5-Universal-Kaggle-${Date.now().toString().slice(-4)}`;
         setTrainingState(prev => ({
           ...prev,
           isTraining: false,
           logs: [
             ...prev.logs,
-            '✅ CONVERGENCE ACHIEVED: Model loss reached optimal plateau.',
+            '✅ CONVERGENCE ACHIEVED: Universal Multi-Domain Spatial Graph calibrated successfully.',
             `💾 CHECKPOINT CREATED: CAD-Spec-${newWeightTag}.bin`,
-            '🚀 Model ready for live deployment to inference engine!'
+            '🚀 Model ready for live deployment across Shopping Malls, Restaurants, Offices, Healthcare & Warehouses!'
           ]
         }));
       }
@@ -117,7 +130,7 @@ export const TrainingStudio: React.FC<TrainingStudioProps> = ({
   };
 
   const handleDeploy = () => {
-    const newVersion = `v3.0-Trained-${Date.now().toString().slice(-4)}`;
+    const newVersion = `v3.5-Universal-Kaggle-${Date.now().toString().slice(-4)}`;
     onDeployTrainedModel(newVersion);
     setDeployedSuccess(true);
     setTrainingState(prev => ({
@@ -125,15 +138,14 @@ export const TrainingStudio: React.FC<TrainingStudioProps> = ({
       activeWeights: newVersion,
       logs: [
         ...prev.logs,
-        `⭐ [DEPLOYED]: Inference pipeline successfully swapped to weights [${newVersion}]!`
+        `⭐ [DEPLOYED]: Inference pipeline updated to weights [${newVersion}]!`
       ]
     }));
 
-    // Trigger celebration confetti
     try {
       confetti({
-        particleCount: 120,
-        spread: 80,
+        particleCount: 140,
+        spread: 90,
         origin: { y: 0.6 }
       });
     } catch (e) {
@@ -148,7 +160,7 @@ export const TrainingStudio: React.FC<TrainingStudioProps> = ({
         <div>
           <div className="flex items-center space-x-2">
             <span className="text-xs font-mono uppercase px-2 py-0.5 rounded bg-cyan-950 text-cyan-400 border border-cyan-800">
-              STUDIO CALIBRATION ENGINE
+              UNIVERSAL AI TRAINING STUDIO
             </span>
             <span className="text-xs font-mono text-slate-400">
               ACTIVE WEIGHTS: <strong className="text-white">{trainingState.activeWeights}</strong>
@@ -156,10 +168,10 @@ export const TrainingStudio: React.FC<TrainingStudioProps> = ({
           </div>
           <h1 className="text-xl font-bold text-white mt-1 flex items-center space-x-2">
             <Cpu className="w-5 h-5 text-cyan-400" />
-            <span>AutoCAD Spatial AI Training & Calibration Studio</span>
+            <span>Universal AutoCAD AI Training & Calibration Studio</span>
           </h1>
-          <p className="text-xs text-slate-400 mt-1 max-w-2xl">
-            Fine-tune spatial-attention graph backbones using paired architectural floorplans and specification documents. Calibrate detection thresholds for code violations, ADA clearances, and room dimension limits.
+          <p className="text-xs text-slate-400 mt-1 max-w-3xl">
+            Train vision-spatial transformer backbones using <strong>Kaggle datasets (CVC-FP, FloorPlans-500, Tell2Design)</strong> and <strong>CubiCasa5k</strong> across <strong>Shopping Malls, Restaurants, Commercial Kitchens, Offices, Healthcare & Warehouses</strong>.
           </p>
         </div>
 
@@ -187,8 +199,8 @@ export const TrainingStudio: React.FC<TrainingStudioProps> = ({
       </div>
 
       <div className="grid grid-cols-12 gap-6">
-        {/* Left Column: Hyperparameters & Training Set (4 cols) */}
-        <div className="col-span-4 space-y-6">
+        {/* Left Column: Hyperparameters & Kaggle Datasets (5 cols) */}
+        <div className="col-span-5 space-y-6">
           {/* Hyperparameter Settings */}
           <div className="glass-panel p-4 rounded-xl border border-slate-800">
             <h3 className="text-xs font-bold text-cyan-300 font-mono uppercase mb-3 flex items-center space-x-2">
@@ -205,9 +217,9 @@ export const TrainingStudio: React.FC<TrainingStudioProps> = ({
                   onChange={e => setBackbone(e.target.value)}
                   className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-white focus:outline-none focus:border-cyan-500"
                 >
-                  <option value="Spatial-ViT-LoRA">Spatial-ViT-LoRA (Transformer Attention)</option>
-                  <option value="CAD-Graph-GNN">CAD-Graph-GNN (Topological Node Graph)</option>
-                  <option value="ResNet101-FloorPlan">ResNet101-FloorPlan (Convolutional BBox)</option>
+                  <option value="Spatial-ViT-LoRA">Spatial-ViT-LoRA (Transformer Attention + Kaggle Pre-trained)</option>
+                  <option value="CAD-Graph-GNN">CAD-Graph-GNN (Topological Node Graph for Room Adjacency)</option>
+                  <option value="ResNet101-FloorPlan">ResNet101-FloorPlan (YOLO Architectural BBox)</option>
                 </select>
               </div>
 
@@ -227,38 +239,34 @@ export const TrainingStudio: React.FC<TrainingStudioProps> = ({
                 />
               </div>
 
-              <div>
-                <div className="flex justify-between text-slate-400 mb-1">
-                  <span>LEARNING RATE</span>
-                  <span className="text-white font-bold">{learningRate}</span>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-slate-400 block mb-1">LEARNING RATE</label>
+                  <select
+                    value={learningRate}
+                    disabled={trainingState.isTraining}
+                    onChange={e => setLearningRate(Number(e.target.value))}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-white focus:outline-none focus:border-cyan-500"
+                  >
+                    <option value={0.0005}>0.0005 (Fine Tuning)</option>
+                    <option value={0.001}>0.0010 (Standard)</option>
+                    <option value={0.005}>0.0050 (Fast)</option>
+                  </select>
                 </div>
-                <select
-                  value={learningRate}
-                  disabled={trainingState.isTraining}
-                  onChange={e => setLearningRate(Number(e.target.value))}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-white focus:outline-none focus:border-cyan-500"
-                >
-                  <option value={0.0005}>0.0005 (Fine Precision Tuning)</option>
-                  <option value={0.001}>0.0010 (Balanced Default)</option>
-                  <option value={0.005}>0.0050 (Fast Convergence)</option>
-                </select>
-              </div>
 
-              <div>
-                <div className="flex justify-between text-slate-400 mb-1">
-                  <span>BATCH SIZE</span>
-                  <span className="text-white font-bold">{batchSize}</span>
+                <div>
+                  <label className="text-slate-400 block mb-1">BATCH SIZE</label>
+                  <select
+                    value={batchSize}
+                    disabled={trainingState.isTraining}
+                    onChange={e => setBatchSize(Number(e.target.value))}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-white focus:outline-none focus:border-cyan-500"
+                  >
+                    <option value={2}>2 Blueprints / Step</option>
+                    <option value={4}>4 Blueprints / Step</option>
+                    <option value={8}>8 Blueprints / Step</option>
+                  </select>
                 </div>
-                <select
-                  value={batchSize}
-                  disabled={trainingState.isTraining}
-                  onChange={e => setBatchSize(Number(e.target.value))}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-white focus:outline-none focus:border-cyan-500"
-                >
-                  <option value={2}>2 Blueprints / Step</option>
-                  <option value={4}>4 Blueprints / Step</option>
-                  <option value={8}>8 Blueprints / Step</option>
-                </select>
               </div>
 
               <button
@@ -273,50 +281,85 @@ export const TrainingStudio: React.FC<TrainingStudioProps> = ({
                 {trainingState.isTraining ? (
                   <>
                     <Flame className="w-4 h-4 text-amber-400 animate-spin" />
-                    <span>TRAINING IN PROGRESS ({trainingState.currentEpoch}/{epochs})...</span>
+                    <span>TRAINING ACROSS DOMAINS ({trainingState.currentEpoch}/{epochs})...</span>
                   </>
                 ) : (
                   <>
                     <Play className="w-4 h-4 fill-current" />
-                    <span>START MODEL TRAINING</span>
+                    <span>START UNIVERSAL MODEL TRAINING</span>
                   </>
                 )}
               </button>
             </div>
           </div>
 
-          {/* Ground Truth Training Pairs */}
+          {/* Kaggle & Multi-Domain Training Sets */}
           <div className="glass-panel p-4 rounded-xl border border-slate-800">
             <div className="flex items-center justify-between mb-3">
               <h3 className="text-xs font-bold text-slate-300 font-mono uppercase flex items-center space-x-2">
                 <Database className="w-4 h-4 text-cyan-400" />
-                <span>Training Pairs ({samples.length})</span>
+                <span>Kaggle & Benchmark Datasets ({filteredSamples.length})</span>
               </h3>
-              <span className="text-[10px] font-mono text-cyan-400 bg-cyan-950 px-2 py-0.5 rounded border border-cyan-800">
-                VERIFIED SET
-              </span>
             </div>
 
-            <div className="space-y-2 text-xs font-mono max-h-60 overflow-y-auto">
-              {samples.map(sample => (
-                <div key={sample.id} className="p-2.5 rounded-lg bg-slate-950/60 border border-slate-800">
+            {/* Domain Filter Pills */}
+            <div className="flex flex-wrap gap-1.5 mb-3">
+              {[
+                { id: 'ALL', label: 'All' },
+                { id: 'KAGGLE', label: 'Kaggle Datasets' },
+                { id: 'MALLS', label: 'Malls & Retail' },
+                { id: 'RESTAURANTS', label: 'Restaurants' },
+                { id: 'OFFICES', label: 'Offices' },
+                { id: 'HEALTHCARE', label: 'Healthcare' }
+              ].map(d => (
+                <button
+                  key={d.id}
+                  onClick={() => setSelectedDomain(d.id)}
+                  className={`text-[10px] font-mono px-2 py-0.5 rounded transition ${
+                    selectedDomain === d.id
+                      ? 'bg-cyan-500 text-slate-950 font-bold'
+                      : 'bg-slate-900 text-slate-400 hover:text-white border border-slate-800'
+                  }`}
+                >
+                  {d.label}
+                </button>
+              ))}
+            </div>
+
+            <div className="space-y-2 text-xs font-mono max-h-72 overflow-y-auto">
+              {filteredSamples.map(sample => (
+                <div key={sample.id} className="p-2.5 rounded-lg bg-slate-950/60 border border-slate-800 hover:border-slate-700 transition">
                   <div className="flex items-center justify-between text-white font-semibold mb-1">
-                    <span className="truncate max-w-[200px]">{sample.blueprintName}</span>
+                    <span className="truncate max-w-[240px]">{sample.blueprintName}</span>
                     <span className="text-[10px] text-emerald-400">{Math.round(sample.verifiedAccuracy * 100)}% Acc</span>
                   </div>
-                  <div className="text-[11px] text-slate-400 truncate">{sample.specName}</div>
-                  <div className="flex items-center justify-between mt-1 text-[10px] text-slate-500">
-                    <span>{sample.annotatedDefectsCount} ground-truth flaws</span>
-                    <span className="uppercase text-cyan-400">{sample.status}</span>
+
+                  <div className="flex items-center space-x-1.5 mb-1.5">
+                    <span className={`text-[9px] uppercase px-1.5 py-0.2 rounded font-bold ${
+                      sample.source.startsWith('Kaggle')
+                        ? 'bg-sky-950 text-sky-400 border border-sky-800'
+                        : sample.source.startsWith('CubiCasa')
+                        ? 'bg-purple-950 text-purple-400 border border-purple-800'
+                        : 'bg-slate-900 text-slate-400'
+                    }`}>
+                      {sample.source}
+                    </span>
+                    <span className="text-[9px] text-cyan-400 bg-cyan-950/40 px-1.5 py-0.2 rounded border border-cyan-800/40">
+                      {sample.domain}
+                    </span>
                   </div>
+
+                  <p className="text-[10px] text-slate-400 leading-snug">
+                    {sample.description}
+                  </p>
                 </div>
               ))}
             </div>
           </div>
         </div>
 
-        {/* Right Column: Live Metrics, Visual Curves & Terminal (8 cols) */}
-        <div className="col-span-8 space-y-6">
+        {/* Right Column: Live Metrics, Visual Curves & Console Stream (7 cols) */}
+        <div className="col-span-7 space-y-6">
           {/* Key Metric Gauges */}
           <div className="grid grid-cols-4 gap-4">
             <div className="glass-panel p-4 rounded-xl border border-slate-800 text-center">
@@ -362,7 +405,7 @@ export const TrainingStudio: React.FC<TrainingStudioProps> = ({
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-xs font-bold text-white font-mono uppercase flex items-center space-x-2">
                 <LineChart className="w-4 h-4 text-cyan-400" />
-                <span>Live Training Curves (Loss & mAP@50)</span>
+                <span>Live Training Curves across Kaggle & Benchmark Sets</span>
               </h3>
               <div className="flex items-center space-x-4 text-xs font-mono">
                 <span className="flex items-center space-x-1.5 text-cyan-400">
@@ -384,16 +427,15 @@ export const TrainingStudio: React.FC<TrainingStudioProps> = ({
             <div className="h-56 w-full bg-slate-950/80 rounded-xl p-3 border border-slate-800/80 relative flex items-center justify-center">
               {trainingState.history.length === 0 ? (
                 <div className="text-center text-xs font-mono text-slate-500">
-                  Click "START MODEL TRAINING" to generate live loss and precision curves.
+                  Click "START UNIVERSAL MODEL TRAINING" to generate live loss and precision curves.
                 </div>
               ) : (
                 <svg className="w-full h-full" viewBox="0 0 600 200" preserveAspectRatio="none">
-                  {/* Grid Lines */}
                   {[0, 50, 100, 150].map(y => (
                     <line key={y} x1="0" y1={y} x2="600" y2={y} stroke="rgba(255,255,255,0.06)" strokeDasharray="4 4" />
                   ))}
 
-                  {/* Train Loss Path (Cyan) */}
+                  {/* Train Loss Path */}
                   <path
                     d={trainingState.history.map((pt, i) => {
                       const x = (i / (epochs - 1 || 1)) * 580 + 10;
@@ -405,7 +447,7 @@ export const TrainingStudio: React.FC<TrainingStudioProps> = ({
                     strokeWidth="3"
                   />
 
-                  {/* Val Loss Path (Amber) */}
+                  {/* Val Loss Path */}
                   <path
                     d={trainingState.history.map((pt, i) => {
                       const x = (i / (epochs - 1 || 1)) * 580 + 10;
@@ -418,7 +460,7 @@ export const TrainingStudio: React.FC<TrainingStudioProps> = ({
                     strokeDasharray="4 4"
                   />
 
-                  {/* mAP Curve (Emerald) */}
+                  {/* mAP Curve */}
                   <path
                     d={trainingState.history.map((pt, i) => {
                       const x = (i / (epochs - 1 || 1)) * 580 + 10;
@@ -430,7 +472,6 @@ export const TrainingStudio: React.FC<TrainingStudioProps> = ({
                     strokeWidth="3"
                   />
 
-                  {/* Data Dots on points */}
                   {trainingState.history.map((pt, i) => {
                     const x = (i / (epochs - 1 || 1)) * 580 + 10;
                     const yTrain = Math.max(10, Math.min(190, pt.trainLoss * 180));
@@ -451,7 +492,7 @@ export const TrainingStudio: React.FC<TrainingStudioProps> = ({
           <div className="glass-panel p-4 rounded-xl border border-slate-800">
             <h3 className="text-xs font-bold text-slate-300 font-mono uppercase mb-2 flex items-center space-x-2">
               <Terminal className="w-4 h-4 text-cyan-400" />
-              <span>Training Pipeline Console Stream</span>
+              <span>Multi-Domain Training Pipeline Console Stream</span>
             </h3>
 
             <div 
@@ -462,6 +503,8 @@ export const TrainingStudio: React.FC<TrainingStudioProps> = ({
                 <div key={idx} className="leading-snug">
                   {log.startsWith('✅') || log.startsWith('💾') || log.startsWith('⭐') ? (
                     <span className="text-emerald-400 font-bold">{log}</span>
+                  ) : log.startsWith('[KAGGLE') ? (
+                    <span className="text-sky-400 font-semibold">{log}</span>
                   ) : log.startsWith('[Epoch') ? (
                     <span className="text-cyan-300">{log}</span>
                   ) : log.startsWith('---') ? (

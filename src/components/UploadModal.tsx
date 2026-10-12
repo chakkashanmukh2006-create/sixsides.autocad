@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { 
   X, UploadCloud, FileCode, FileText, 
-  Sparkles, CheckCircle2, ArrowRight, Building2, Warehouse, Activity
+  Sparkles, CheckCircle2, ArrowRight, Building2, Warehouse, Activity,
+  ShoppingBag, Utensils, Building
 } from 'lucide-react';
 import { BlueprintDataset } from '../types';
 import { INITIAL_DATASETS } from '../data/mockDatasets';
@@ -223,9 +224,13 @@ export const UploadModal: React.FC<UploadModalProps> = ({
                 >
                   <div className="flex items-start space-x-3.5">
                     <div className="w-10 h-10 rounded-xl bg-cyan-950/60 border border-cyan-800/60 flex items-center justify-center text-cyan-400 shrink-0 group-hover:scale-105 transition">
-                      {ds.id === 'hospital-icu' && <Activity className="w-5 h-5" />}
-                      {ds.id === 'pharma-warehouse' && <Warehouse className="w-5 h-5" />}
-                      {ds.id === 'radiology-suite' && <Building2 className="w-5 h-5" />}
+                      {ds.facilityType === 'Commercial Shopping Mall' && <ShoppingBag className="w-5 h-5" />}
+                      {ds.facilityType === 'Fine Dining Restaurant & Kitchen' && <Utensils className="w-5 h-5" />}
+                      {ds.facilityType === 'Corporate Office Tower' && <Building className="w-5 h-5" />}
+                      {ds.facilityType === 'Hospital ICU & Surgical Wing' && <Activity className="w-5 h-5" />}
+                      {ds.facilityType === 'BioPharma Logistics Warehouse' && <Warehouse className="w-5 h-5" />}
+                      {ds.facilityType === 'Radiology & Imaging Suite' && <Building2 className="w-5 h-5" />}
+                      {ds.facilityType === 'Custom Upload' && <Building2 className="w-5 h-5" />}
                     </div>
 
                     <div>
