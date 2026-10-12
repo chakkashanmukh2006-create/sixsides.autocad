@@ -1,0 +1,142 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg-space: #070a12;
+  --bg-surface: #0d1322;
+  --bg-panel: #131b2e;
+  --bg-panel-hover: #1a253e;
+  --bg-canvas: #090e1c;
+  --border-subtle: rgba(255, 255, 255, 0.08);
+  --border-highlight: rgba(0, 229, 255, 0.3);
+  
+  --cad-cyan: #00e5ff;
+  --cad-cyan-glow: rgba(0, 229, 255, 0.35);
+  --cad-accent: #38bdf8;
+  
+  --defect-critical: #ef4444;
+  --defect-critical-glow: rgba(239, 68, 68, 0.4);
+  --defect-major: #f59e0b;
+  --defect-major-glow: rgba(245, 158, 11, 0.3);
+  --defect-minor: #8b5cf6;
+  --defect-minor-glow: rgba(139, 92, 246, 0.3);
+  --compliant-pass: #10b981;
+  --compliant-pass-glow: rgba(16, 185, 129, 0.3);
+
+  --text-main: #f8fafc;
+  --text-muted: #94a3b8;
+  --text-dim: #64748b;
+  
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+  background-color: var(--bg-space);
+  color: var(--text-main);
+  font-family: var(--font-sans);
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+#root {
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* Custom Scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.2);
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 229, 255, 0.4);
+}
+
+/* Engineering Blueprint Grid Background */
+.cad-grid-bg {
+  background-color: var(--bg-canvas);
+  background-image: 
+    linear-gradient(rgba(0, 229, 255, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 229, 255, 0.04) 1px, transparent 1px),
+    linear-gradient(rgba(255, 255, 255, 0.015) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.015) 1px, transparent 1px);
+  background-size: 100px 100px, 100px 100px, 20px 20px, 20px 20px;
+  background-position: -1px -1px, -1px -1px, -1px -1px, -1px -1px;
+}
+
+/* Glassmorphism Classes */
+.glass-panel {
+  background: rgba(19, 27, 46, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--border-subtle);
+}
+
+.glass-panel-darker {
+  background: rgba(13, 19, 34, 0.92);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--border-subtle);
+}
+
+/* Animations */
+@keyframes pulseGlow {
+  0%, 100% {
+    box-shadow: 0 0 8px rgba(239, 68, 68, 0.5), inset 0 0 4px rgba(239, 68, 68, 0.3);
+    opacity: 0.9;
+  }
+  50% {
+    box-shadow: 0 0 20px rgba(239, 68, 68, 0.85), inset 0 0 10px rgba(239, 68, 68, 0.5);
+    opacity: 1;
+  }
+}
+
+.animate-pulse-glow {
+  animation: pulseGlow 1.8s infinite ease-in-out;
+}
+
+@keyframes sweepScan {
+  0% { transform: translateY(-100%); opacity: 0; }
+  50% { opacity: 0.6; }
+  100% { transform: translateY(100%); opacity: 0; }
+}
+
+.animate-scan {
+  animation: sweepScan 3s ease-in-out infinite;
+}
+
+/* Utility classes */
+.font-mono {
+  font-family: var(--font-mono);
+}
+
+.glow-cyan {
+  text-shadow: 0 0 10px var(--cad-cyan-glow);
+}
+
+.glow-red {
+  text-shadow: 0 0 10px var(--defect-critical-glow);
+}
