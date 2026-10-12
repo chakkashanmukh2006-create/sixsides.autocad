@@ -424,7 +424,16 @@ export const INITIAL_DATASETS = [
         boundingBox: { x: 320, y: 460, width: 220, height: 160 },
         targetLabel: 'EXECUTIVE BOARDROOM 1802',
         layer: 'A-DOOR',
-        confidenceScore: 0.96
+        confidenceScore: 0.96,
+        dimensionCallout: {
+          x1: 430,
+          y1: 460,
+          x2: 430,
+          y2: 540,
+          orientation: 'vertical',
+          measuredLabel: 'INWARD SWING (90° BLOCKAGE)',
+          requiredLabel: 'IBC §1010.1: OUTWARD SWING REQUIRED'
+        }
       },
       {
         id: 'OFF-DEF-002',
@@ -441,7 +450,16 @@ export const INITIAL_DATASETS = [
         boundingBox: { x: 860, y: 480, width: 260, height: 220 },
         targetLabel: 'SOUTHWEST OPEN DESKING POD SW-04',
         layer: 'LIFE-SAFETY',
-        confidenceScore: 0.93
+        confidenceScore: 0.93,
+        dimensionCallout: {
+          x1: 860,
+          y1: 590,
+          x2: 1120,
+          y2: 590,
+          orientation: 'horizontal',
+          measuredLabel: '76.2 m TRAVEL (+16.2 m DEFICIT)',
+          requiredLabel: 'IBC §1017 MAX: ≤ 60.0 m TRAVEL'
+        }
       }
     ],
     specs: [
@@ -708,7 +726,16 @@ export const INITIAL_DATASETS = [
         boundingBox: { x: 490, y: 220, width: 230, height: 360 },
         targetLabel: 'HIGH-BAY AISLE B (RACKS 3 & 4)',
         layer: 'A-RACK',
-        confidenceScore: 0.97
+        confidenceScore: 0.97,
+        dimensionCallout: {
+          x1: 490,
+          y1: 400,
+          x2: 720,
+          y2: 400,
+          orientation: 'horizontal',
+          measuredLabel: '2,650 mm AISLE (-850 mm BOTTLENECK)',
+          requiredLabel: 'OSHA 1910 REQ: ≥ 3,500 mm CLEAR'
+        }
       }
     ],
     specs: [
