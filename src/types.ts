@@ -10,6 +10,17 @@ export type DisciplineType =
   | 'Accessibility' 
   | 'RetailZoning';
 
+export interface DimensionCallout {
+  x1: number;
+  y1: number;
+  x2: number;
+  y2: number;
+  measuredLabel: string;
+  requiredLabel: string;
+  orientation?: 'horizontal' | 'vertical';
+  offset?: number;
+}
+
 export interface DefectAnnotation {
   id: string;
   title: string;
@@ -31,6 +42,7 @@ export interface DefectAnnotation {
   targetLabel: string;
   layer: string;
   confidenceScore: number;
+  dimensionCallout?: DimensionCallout;
 }
 
 export interface SpecificationRule {
@@ -46,9 +58,26 @@ export interface SpecificationRule {
 
 export interface CadEntity {
   id: string;
-  type: 'wall' | 'door' | 'room' | 'equipment' | 'dimension' | 'corridor' | 'hazard' | 'duct' | 'bed' | 'table' | 'escalator';
+  type: 
+    | 'wall' 
+    | 'door' 
+    | 'room' 
+    | 'equipment' 
+    | 'dimension' 
+    | 'corridor' 
+    | 'hazard' 
+    | 'duct' 
+    | 'bed' 
+    | 'table' 
+    | 'chair'
+    | 'sink' 
+    | 'fryer' 
+    | 'escalator' 
+    | 'kiosk' 
+    | 'shutter';
   layer: string;
   label?: string;
+  subDetails?: string;
   x: number;
   y: number;
   width?: number;

@@ -49,7 +49,16 @@ export const INITIAL_DATASETS: BlueprintDataset[] = [
         boundingBox: { x: 920, y: 520, width: 280, height: 90 },
         targetLabel: 'SOUTH SERVICE LOADING CONCOURSE',
         layer: 'A-CORRIDOR',
-        confidenceScore: 0.98
+        confidenceScore: 0.98,
+        dimensionCallout: {
+          x1: 940,
+          y1: 565,
+          x2: 1180,
+          y2: 565,
+          measuredLabel: '18.5 m DEAD-END (+12.5 m DEFICIT)',
+          requiredLabel: 'IBC §402.8 MAX ALLOWED: ≤ 6.0 m',
+          orientation: 'horizontal'
+        }
       },
       {
         id: 'MALL-DEF-002',
@@ -66,7 +75,16 @@ export const INITIAL_DATASETS: BlueprintDataset[] = [
         boundingBox: { x: 580, y: 340, width: 140, height: 100 },
         targetLabel: 'CENTRAL ATRIUM FIRE SHUTTER FS-02',
         layer: 'A-KIOSK',
-        confidenceScore: 0.95
+        confidenceScore: 0.95,
+        dimensionCallout: {
+          x1: 590,
+          y1: 390,
+          x2: 635,
+          y2: 390,
+          measuredLabel: '850 mm CLEARANCE (-2,150 mm BLOCKED)',
+          requiredLabel: 'NFPA 80 REQ: ≥ 3,000 mm ENVELOPE',
+          orientation: 'horizontal'
+        }
       },
       {
         id: 'MALL-DEF-003',
@@ -83,7 +101,16 @@ export const INITIAL_DATASETS: BlueprintDataset[] = [
         boundingBox: { x: 380, y: 190, width: 160, height: 120 },
         targetLabel: 'ESCALATOR DISCHARGE CONCOURSE EAST',
         layer: 'A-CIRC',
-        confidenceScore: 0.92
+        confidenceScore: 0.92,
+        dimensionCallout: {
+          x1: 410,
+          y1: 250,
+          x2: 470,
+          y2: 250,
+          measuredLabel: '1,600 mm DISCHARGE (-600 mm BOTTLENECK)',
+          requiredLabel: 'IBC 1005 REQ: ≥ 2,200 mm CLEAR',
+          orientation: 'horizontal'
+        }
       }
     ],
     specs: [
@@ -205,10 +232,19 @@ export const INITIAL_DATASETS: BlueprintDataset[] = [
         deviation: '-100 mm (-66.7% deficient capture envelope)',
         remediation: 'Extend stainless steel canopy hood C-01 eastward by 200 mm or install certified side grease skirts.',
         storyNarrative: 'Hot vaporized grease and oil droplets will bypass the exhaust filters and deposit on combustible ceiling tiles, risking a structural kitchen flashover fire.',
-        boundingBox: { x: 740, y: 150, width: 220, height: 140 },
+        boundingBox: { x: 720, y: 130, width: 240, height: 160 },
         targetLabel: 'COMMERCIAL COOKLINE TYPE-1 HOOD C-01',
         layer: 'M-HVAC',
-        confidenceScore: 0.97
+        confidenceScore: 0.97,
+        dimensionCallout: {
+          x1: 890,
+          y1: 220,
+          x2: 930,
+          y2: 220,
+          measuredLabel: '50 mm OVERHANG (-100 mm DEFICIT)',
+          requiredLabel: '≥ 150 mm (6") MANDATED BY NFPA 96',
+          orientation: 'horizontal'
+        }
       },
       {
         id: 'REST-DEF-002',
@@ -222,10 +258,19 @@ export const INITIAL_DATASETS: BlueprintDataset[] = [
         deviation: '-750 mm distance deficit / missing sanitary partition',
         remediation: 'Install 600 mm tall stainless-steel sanitary divider plate between Sink SK-03 and SK-04.',
         storyNarrative: 'Water splash from rinsing raw chicken will cross-contaminate fresh salad greens with Salmonella and Campylobacter bacteria.',
-        boundingBox: { x: 1010, y: 150, width: 180, height: 130 },
-        targetLabel: 'FOOD PREPARATION SINK STATION SK-03',
+        boundingBox: { x: 1000, y: 130, width: 250, height: 160 },
+        targetLabel: 'FOOD PREPARATION SINK STATION SK-03 & SK-04',
         layer: 'A-PLUMB',
-        confidenceScore: 0.94
+        confidenceScore: 0.94,
+        dimensionCallout: {
+          x1: 1060,
+          y1: 200,
+          x2: 1110,
+          y2: 200,
+          measuredLabel: '450 mm (-750 mm HAZARD)',
+          requiredLabel: '≥ 1,200 mm OR 600mm SPLASH SHIELD',
+          orientation: 'horizontal'
+        }
       },
       {
         id: 'REST-DEF-003',
@@ -239,10 +284,19 @@ export const INITIAL_DATASETS: BlueprintDataset[] = [
         deviation: '-195 mm (-21.3% restricted wheelchair access)',
         remediation: 'Remove Table T-06 and space remaining tables to guarantee continuous 950 mm clear path to restrooms.',
         storyNarrative: 'Patrons using wheelchairs or walking canes cannot safely reach their tables or emergency exit doors without asking other guests to stand.',
-        boundingBox: { x: 260, y: 460, width: 310, height: 220 },
+        boundingBox: { x: 200, y: 460, width: 340, height: 220 },
         targetLabel: 'MAIN DINING SALON TABLE AISLES',
         layer: 'A-FURN',
-        confidenceScore: 0.91
+        confidenceScore: 0.91,
+        dimensionCallout: {
+          x1: 260,
+          y1: 535,
+          x2: 320,
+          y2: 535,
+          measuredLabel: '720 mm AISLE (-195 mm DEFICIT)',
+          requiredLabel: 'ADA MIN ≥ 915 mm (36" WHEELCHAIR)',
+          orientation: 'horizontal'
+        }
       }
     ],
     specs: [
@@ -300,21 +354,27 @@ export const INITIAL_DATASETS: BlueprintDataset[] = [
       { id: 'b-r1', type: 'room', layer: 'A-ROOM', x: 120, y: 100, width: 540, height: 280, label: 'COCKTAIL BAR & LOUNGE' },
       { id: 'b-r2', type: 'room', layer: 'A-ROOM', x: 120, y: 400, width: 540, height: 360, label: 'MAIN DINING SALON' },
 
-      // Commercial Kitchen
+      // Commercial Kitchen Rooms
       { id: 'b-r3', type: 'room', layer: 'A-ROOM', x: 700, y: 100, width: 280, height: 260, label: 'HOT COOKLINE & RANGE HOOD' },
       { id: 'b-r4', type: 'room', layer: 'A-ROOM', x: 1000, y: 100, width: 280, height: 260, label: 'FOOD PREP & VEGETABLE SINKS' },
       { id: 'b-r5', type: 'room', layer: 'A-ROOM', x: 700, y: 380, width: 280, height: 380, label: 'SCULLERY & DISHWASHING' },
       { id: 'b-r6', type: 'room', layer: 'A-ROOM', x: 1000, y: 380, width: 280, height: 380, label: 'WALK-IN COLD ROOMS (-18°C)' },
 
-      // Kitchen Hood Equipment
-      { id: 'b-hd', type: 'equipment', layer: 'M-HVAC', x: 760, y: 160, width: 180, height: 100, label: 'TYPE-1 RANGE HOOD C-01' },
+      // Cookline Equipment: Heavy Fryers & Type-1 Hood
+      { id: 'b-fr', type: 'fryer', layer: 'EQUIPMENT', x: 745, y: 170, width: 145, height: 75, label: 'FRYERS & RANGE' },
+      { id: 'b-hd', type: 'equipment', layer: 'M-HVAC', x: 735, y: 155, width: 195, height: 105, label: 'TYPE-1 CANOPY HOOD C-01' },
 
-      // Dining Tables
-      { id: 't1', type: 'table', layer: 'A-FURN', x: 220, y: 480, width: 60, height: 60, label: 'TABLE 1' },
-      { id: 't2', type: 'table', layer: 'A-FURN', x: 340, y: 480, width: 60, height: 60, label: 'TABLE 2' },
-      { id: 't3', type: 'table', layer: 'A-FURN', x: 460, y: 480, width: 60, height: 60, label: 'TABLE 3' },
-      { id: 't4', type: 'table', layer: 'A-FURN', x: 220, y: 600, width: 60, height: 60, label: 'TABLE 4' },
-      { id: 't5', type: 'table', layer: 'A-FURN', x: 340, y: 600, width: 60, height: 60, label: 'TABLE 5' }
+      // Sinks in Food Prep Room
+      { id: 'b-sk3', type: 'sink', layer: 'A-PLUMB', x: 1010, y: 160, width: 50, height: 80, label: 'RAW POULTRY SINK SK-03', subDetails: 'CROSS-CONTAMINATION HAZARD' },
+      { id: 'b-sk4', type: 'sink', layer: 'A-PLUMB', x: 1110, y: 160, width: 50, height: 80, label: 'PRODUCE SINK SK-04', subDetails: 'READY-TO-EAT GREENS' },
+
+      // Dining Tables & Chairs
+      { id: 't1', type: 'table', layer: 'A-FURN', x: 200, y: 480, width: 55, height: 55, label: 'TABLE T-01' },
+      { id: 't2', type: 'table', layer: 'A-FURN', x: 320, y: 480, width: 55, height: 55, label: 'TABLE T-02' },
+      { id: 't3', type: 'table', layer: 'A-FURN', x: 440, y: 480, width: 55, height: 55, label: 'TABLE T-03' },
+      { id: 't4', type: 'table', layer: 'A-FURN', x: 200, y: 590, width: 55, height: 55, label: 'TABLE T-04' },
+      { id: 't8', type: 'table', layer: 'A-FURN', x: 320, y: 590, width: 55, height: 55, label: 'TABLE T-08' },
+      { id: 't6', type: 'table', layer: 'A-FURN', x: 440, y: 590, width: 55, height: 55, label: 'TABLE T-06' }
     ]
   },
 
@@ -485,7 +545,16 @@ export const INITIAL_DATASETS: BlueprintDataset[] = [
         boundingBox: { x: 420, y: 380, width: 340, height: 75 },
         targetLabel: 'MAIN PATIENT TRANSPORT CORRIDOR',
         layer: 'A-WALL',
-        confidenceScore: 0.98
+        confidenceScore: 0.98,
+        dimensionCallout: {
+          x1: 580,
+          y1: 380,
+          x2: 580,
+          y2: 455,
+          measuredLabel: '1,890 mm CLEAR (-550 mm DEFICIT)',
+          requiredLabel: 'FGI §2.1-3.2 REQ: ≥ 2,440 mm (8\'-0")',
+          orientation: 'vertical'
+        }
       },
       {
         id: 'DEF-002',
@@ -502,7 +571,16 @@ export const INITIAL_DATASETS: BlueprintDataset[] = [
         boundingBox: { x: 810, y: 160, width: 160, height: 140 },
         targetLabel: 'ICU-04 (AIIR ISOLATION)',
         layer: 'A-ROOM',
-        confidenceScore: 0.96
+        confidenceScore: 0.96,
+        dimensionCallout: {
+          x1: 890,
+          y1: 350,
+          x2: 890,
+          y2: 290,
+          measuredLabel: 'DIRECT DOOR (0 mm AIRLOCK)',
+          requiredLabel: 'CDC: NEGATIVE AIRLOCK ANTEROOM REQ',
+          orientation: 'vertical'
+        }
       },
       {
         id: 'DEF-003',
@@ -519,7 +597,16 @@ export const INITIAL_DATASETS: BlueprintDataset[] = [
         boundingBox: { x: 190, y: 150, width: 180, height: 160 },
         targetLabel: 'CT RADIOLOGY & SCAN SUITE',
         layer: 'A-WALL-RAD',
-        confidenceScore: 0.94
+        confidenceScore: 0.94,
+        dimensionCallout: {
+          x1: 360,
+          y1: 180,
+          x2: 380,
+          y2: 180,
+          measuredLabel: '1.2 mm Pb (-0.8 mm DEFICIT)',
+          requiredLabel: 'NCRP 147 REQ: ≥ 2.0 mm Pb LEAD',
+          orientation: 'horizontal'
+        }
       }
     ],
     specs: [

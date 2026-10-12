@@ -365,6 +365,111 @@ export const CadViewer: React.FC<CadViewerProps> = ({
         }
       }
 
+      if (ent.type === 'sink' && ent.width && ent.height) {
+        // Stainless Steel Prep Sink
+        ctx.fillStyle = 'rgba(56, 189, 248, 0.12)';
+        ctx.fillRect(ent.x, ent.y, ent.width, ent.height);
+        ctx.strokeStyle = '#38bdf8';
+        ctx.lineWidth = 1.5;
+        ctx.strokeRect(ent.x, ent.y, ent.width, ent.height);
+
+        // Double Basins
+        const bw = (ent.width - 24) / 2;
+        const bh = ent.height - 16;
+        [0, 1].forEach(i => {
+          const bx = ent.x + 8 + i * (bw + 8);
+          const by = ent.y + 8;
+          ctx.strokeStyle = '#00e5ff';
+          ctx.lineWidth = 1;
+          ctx.strokeRect(bx, by, bw, bh);
+          // Drain circle
+          ctx.beginPath();
+          ctx.arc(bx + bw / 2, by + bh / 2, 4, 0, Math.PI * 2);
+          ctx.strokeStyle = '#00e5ff';
+          ctx.stroke();
+        });
+
+        if (ent.label) {
+          ctx.fillStyle = '#f8fafc';
+          ctx.font = 'bold 9px JetBrains Mono';
+          ctx.fillText(ent.label, ent.x + 6, ent.y - 4);
+        }
+        if (ent.subDetails) {
+          ctx.fillStyle = '#ef4444';
+          ctx.font = 'bold 8px JetBrains Mono';
+          ctx.fillText(ent.subDetails, ent.x + 6, ent.y + ent.height + 11);
+        }
+      }
+
+      if (ent.type === 'fryer' && ent.width && ent.height) {
+        // Deep Fryers & Heavy Cookline Battery
+        ctx.fillStyle = 'rgba(239, 68, 68, 0.15)';
+        ctx.fillRect(ent.x, ent.y, ent.width, ent.height);
+        ctx.strokeStyle = '#ef4444';
+        ctx.lineWidth = 1.5;
+        ctx.strokeRect(ent.x, ent.y, ent.width, ent.height);
+
+        // Vats
+        const vatW = (ent.width - 20) / 2;
+        const vatH = (ent.height || 60) - 12;
+        [0, 1].forEach(i => {
+          const vx = ent.x + 6 + i * (vatW + 8);
+          ctx.strokeStyle = '#f87171';
+          ctx.strokeRect(vx, ent.y + 6, vatW, vatH);
+        });
+
+        if (ent.label) {
+          ctx.fillStyle = '#ffffff';
+          ctx.font = 'bold 9px JetBrains Mono';
+          ctx.fillText(ent.label, ent.x + 4, ent.y + (ent.height || 60) / 2 + 3);
+        }
+      }
+
+      if (ent.type === 'table' && ent.width && ent.height) {
+        // Restaurant Table with Surrounding Chairs
+        ctx.fillStyle = 'rgba(245, 158, 11, 0.15)';
+        ctx.fillRect(ent.x, ent.y, ent.width, ent.height);
+        ctx.strokeStyle = '#f59e0b';
+        ctx.lineWidth = 1.5;
+        ctx.strokeRect(ent.x, ent.y, ent.width, ent.height);
+
+        // 4 Surrounding Chairs
+        const chairSize = 14;
+        // Top & Bottom
+        ctx.fillStyle = '#78350f';
+        ctx.fillRect(ent.x + ent.width / 2 - 10, ent.y - chairSize - 2, 20, chairSize);
+        ctx.fillRect(ent.x + ent.width / 2 - 10, ent.y + ent.height + 2, 20, chairSize);
+        // Left & Right
+        ctx.fillRect(ent.x - chairSize - 2, ent.y + ent.height / 2 - 10, chairSize, 20);
+        ctx.fillRect(ent.x + ent.width + 2, ent.y + ent.height / 2 - 10, chairSize, 20);
+
+        if (ent.label) {
+          ctx.fillStyle = '#fef3c7';
+          ctx.font = 'bold 9px JetBrains Mono';
+          ctx.textAlign = 'center';
+          ctx.fillText(ent.label, ent.x + ent.width / 2, ent.y + ent.height / 2 + 3);
+          ctx.textAlign = 'start';
+        }
+      }
+
+      if (ent.type === 'shutter') {
+        // Automatic Rolling Fire Shutter Line
+        ctx.beginPath();
+        ctx.moveTo(ent.x, ent.y);
+        ctx.lineTo(ent.x2 || ent.x + 100, ent.y2 || ent.y);
+        ctx.strokeStyle = '#ef4444';
+        ctx.lineWidth = 4;
+        ctx.setLineDash([8, 6]);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        if (ent.label) {
+          ctx.fillStyle = '#fca5a5';
+          ctx.font = 'bold 10px JetBrains Mono';
+          ctx.fillText(ent.label, ent.x + 8, ent.y - 6);
+        }
+      }
+
       if (ent.type === 'door' && ent.width) {
         // CAD Door Swing Arc
         ctx.beginPath();
@@ -385,7 +490,7 @@ export const CadViewer: React.FC<CadViewerProps> = ({
       }
     });
 
-    // 4. Render Defect Overlay Markings (Red Boxes & Pins)
+    // 4. Render Defect Overlay Markings & Real CAD Dimension Lines
     if (activeLayers['DEFECTS']) {
       dataset.defects.forEach(defect => {
         const { x, y, width, height } = defect.boundingBox;
@@ -422,14 +527,12 @@ export const CadViewer: React.FC<CadViewerProps> = ({
           ctx.strokeStyle = '#ffffff';
           ctx.lineWidth = 3 / scale;
           
-          // Top-left
           ctx.beginPath();
           ctx.moveTo(x - 6, y - 6 + bLen);
           ctx.lineTo(x - 6, y - 6);
           ctx.lineTo(x - 6 + bLen, y - 6);
           ctx.stroke();
 
-          // Bottom-right
           ctx.beginPath();
           ctx.moveTo(x + width + 6 - bLen, y + height + 6);
           ctx.lineTo(x + width + 6, y + height + 6);
@@ -456,6 +559,89 @@ export const CadViewer: React.FC<CadViewerProps> = ({
         ctx.fillStyle = isSelected ? '#ffc9c9' : '#fca5a5';
         ctx.font = '10px Inter';
         ctx.fillText(defect.targetLabel, badgeX, y + height + 16);
+
+        // 5. Draw REAL CAD DIMENSION LINE & CALLOUT on the Canvas
+        if (defect.dimensionCallout) {
+          const dim = defect.dimensionCallout;
+          const arrowSize = 6 / scale;
+
+          // Dimension Line
+          ctx.beginPath();
+          ctx.moveTo(dim.x1, dim.y1);
+          ctx.lineTo(dim.x2, dim.y2);
+          ctx.strokeStyle = '#ef4444';
+          ctx.lineWidth = 2.5 / scale;
+          ctx.stroke();
+
+          // Extension Tick Marks at Endpoints
+          const tickLen = 10 / scale;
+          if (dim.orientation === 'vertical') {
+            ctx.beginPath();
+            ctx.moveTo(dim.x1 - tickLen, dim.y1);
+            ctx.lineTo(dim.x1 + tickLen, dim.y1);
+            ctx.moveTo(dim.x2 - tickLen, dim.y2);
+            ctx.lineTo(dim.x2 + tickLen, dim.y2);
+            ctx.strokeStyle = '#f87171';
+            ctx.lineWidth = 1.5 / scale;
+            ctx.stroke();
+          } else {
+            ctx.beginPath();
+            ctx.moveTo(dim.x1, dim.y1 - tickLen);
+            ctx.lineTo(dim.x1, dim.y1 + tickLen);
+            ctx.moveTo(dim.x2, dim.y2 - tickLen);
+            ctx.lineTo(dim.x2, dim.y2 + tickLen);
+            ctx.strokeStyle = '#f87171';
+            ctx.lineWidth = 1.5 / scale;
+            ctx.stroke();
+          }
+
+          // Arrowheads at endpoints
+          const dx = dim.x2 - dim.x1;
+          const dy = dim.y2 - dim.y1;
+          const angle = Math.atan2(dy, dx);
+
+          // Arrow 1 (at x1, y1)
+          ctx.beginPath();
+          ctx.moveTo(dim.x1, dim.y1);
+          ctx.lineTo(dim.x1 + arrowSize * 2 * Math.cos(angle - Math.PI / 6), dim.y1 + arrowSize * 2 * Math.sin(angle - Math.PI / 6));
+          ctx.lineTo(dim.x1 + arrowSize * 2 * Math.cos(angle + Math.PI / 6), dim.y1 + arrowSize * 2 * Math.sin(angle + Math.PI / 6));
+          ctx.closePath();
+          ctx.fillStyle = '#ef4444';
+          ctx.fill();
+
+          // Arrow 2 (at x2, y2)
+          ctx.beginPath();
+          ctx.moveTo(dim.x2, dim.y2);
+          ctx.lineTo(dim.x2 - arrowSize * 2 * Math.cos(angle - Math.PI / 6), dim.y2 - arrowSize * 2 * Math.sin(angle - Math.PI / 6));
+          ctx.lineTo(dim.x2 - arrowSize * 2 * Math.cos(angle + Math.PI / 6), dim.y2 - arrowSize * 2 * Math.sin(angle + Math.PI / 6));
+          ctx.closePath();
+          ctx.fillStyle = '#ef4444';
+          ctx.fill();
+
+          // Prominent Measurement Banner Tag in center
+          const midX = (dim.x1 + dim.x2) / 2;
+          const midY = (dim.y1 + dim.y2) / 2;
+          const boxW = 210;
+          const boxH = 34;
+
+          ctx.fillStyle = 'rgba(15, 23, 42, 0.95)';
+          ctx.strokeStyle = isSelected ? '#ef4444' : '#f87171';
+          ctx.lineWidth = 1.5 / scale;
+          ctx.strokeRect(midX - boxW / 2, midY - boxH / 2, boxW, boxH);
+          ctx.fillRect(midX - boxW / 2, midY - boxH / 2, boxW, boxH);
+
+          // Line 1: Actual Measured
+          ctx.fillStyle = '#ef4444';
+          ctx.font = 'bold 10px JetBrains Mono';
+          ctx.textAlign = 'center';
+          ctx.fillText(`MEASURED: ${dim.measuredLabel}`, midX, midY - 3);
+
+          // Line 2: Required Code
+          ctx.fillStyle = '#38bdf8';
+          ctx.font = 'bold 9px JetBrains Mono';
+          ctx.fillText(`REQ CODE: ${dim.requiredLabel}`, midX, midY + 11);
+          ctx.textAlign = 'start';
+        }
       });
     }
 
