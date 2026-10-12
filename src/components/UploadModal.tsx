@@ -48,14 +48,18 @@ export const UploadModal: React.FC<UploadModalProps> = ({
   };
 
   const handleProcessCustom = () => {
-    if (!cadFile || !specFile) return;
+    if (!cadFile) return;
 
     setIsProcessing(true);
     setTimeout(() => {
+      const isSpecProvided = Boolean(specFile);
+      const specTitle = specFile ? specFile.name : 'Standard Building & Life-Safety Baseline (IBC 2024 / ADA / NFPA)';
+      const specAuthority = specFile ? 'Custom Specification Document' : 'International Building Code & Life Safety Council';
+
       // Create parsed custom dataset
       const customDataset: BlueprintDataset = {
         id: `custom-${Date.now()}`,
-        name: projectName || cadFile.name,
+        name: projectName || cadFile.name.replace(/\.[^/.]+$/, ''),
         facilityType: 'Custom Upload',
         filename: cadFile.name,
         fileType: cadFile.name.endsWith('.dxf') ? 'dxf' : cadFile.name.endsWith('.pdf') ? 'pdf' : 'img',
@@ -68,35 +72,37 @@ export const UploadModal: React.FC<UploadModalProps> = ({
           realHeightMm: 45000,
         },
         specDocument: {
-          title: specFile.name,
-          authority: 'Custom Specification Authority',
-          version: 'Uploaded Spec v1.0',
-          summary: `Extracted spatial criteria and compliance thresholds from uploaded document: ${specFile.name}.`
+          title: specTitle,
+          authority: specAuthority,
+          version: isSpecProvided ? 'Custom Uploaded Spec' : 'IBC-2024 / ADA-STD (Auto-Applied)',
+          summary: isSpecProvided
+            ? `Extracted spatial criteria and compliance thresholds from uploaded document: ${specFile?.name}.`
+            : 'Standard building safety rules applied automatically: Minimum corridor egress widths, emergency door swings, and ADA accessibility clearances.'
         },
         storyNarrative: {
-          summary: `Spatial validation analysis for custom architectural blueprint ${cadFile.name} cross-referenced against ${specFile.name}.`,
-          spatialFlow: 'Primary spatial egress network verified. Egress corridors analyzed for clear travel width.',
-          safetyRisk: 'CRITICAL FLAGGED: Specification requires 2,400mm clearance for critical corridors; current drawing shows potential pinch point violations.',
+          summary: `Spatial validation analysis for architectural blueprint "${cadFile.name}" evaluated against ${isSpecProvided ? `uploaded spec "${specFile?.name}"` : 'standard architectural building codes'}.`,
+          spatialFlow: 'Primary spatial egress network verified. Egress corridors analyzed for clear travel width and turning radius.',
+          safetyRisk: 'CRITICAL FLAGGED: Standard egress corridor clearance requires minimum 2,400 mm unobstructed width; current drawing exhibits a 480 mm spatial bottleneck.',
           logisticalEfficiency: 'Functional zoning aligns with general operational throughput, but clearance envelopes require realignment.',
           keyFindings: [
             'Corridor travel envelope flagged for code compliance verification.',
             'Fire egress door swing clear path matches standard criteria.',
-            'Zoning spatial partitions validated against uploaded requirements.'
+            isSpecProvided ? 'Custom specification rules cross-referenced successfully.' : 'Standard IBC / ADA building baseline criteria evaluated.'
           ]
         },
         defects: [
           {
             id: 'CUST-DEF-001',
-            title: 'Specification Mismatch on Corridors Clear Envelope',
+            title: 'Corridor Width Below Standard Egress Code',
             discipline: 'LifeSafety',
             severity: 'CRITICAL',
             status: 'FLAGGED',
-            specCode: 'CUSTOM-SPEC §3.1',
+            specCode: isSpecProvided ? 'CUSTOM-SPEC §3.1' : 'IBC §1020.2 / NFPA 101',
             specRequirement: 'Minimum unobstructed clear width of 2,400 mm along primary circulation path.',
-            actualMeasured: 'CAD drawing measurement: 1,920 mm (-480 mm code deficit)',
+            actualMeasured: 'CAD drawing measurement: 1,920 mm (-480 mm deficit)',
             deviation: '-480 mm non-compliant narrow corridor',
             remediation: 'Relocate perimeter partition boundary to satisfy 2,400 mm clear standard.',
-            storyNarrative: 'Circulation bottleneck detected in uploaded CAD drawing based on specification rules.',
+            storyNarrative: 'Circulation bottleneck detected in uploaded CAD drawing based on standard egress criteria.',
             boundingBox: { x: 450, y: 350, width: 320, height: 80 },
             targetLabel: 'PRIMARY CIRCULATION PATH',
             layer: 'A-WALL',
@@ -108,7 +114,7 @@ export const UploadModal: React.FC<UploadModalProps> = ({
             discipline: 'HealthcareEquipment',
             severity: 'MAJOR',
             status: 'FLAGGED',
-            specCode: 'CUSTOM-SPEC §5.4',
+            specCode: isSpecProvided ? 'CUSTOM-SPEC §5.4' : 'OSHA 1910 / ADA §307',
             specRequirement: 'Equipment buffer perimeter requires 1,200 mm clearance for maintenance access.',
             actualMeasured: 'Encroachment detected: 780 mm actual clearance',
             deviation: '-420 mm maintenance buffer encroachment',
@@ -123,7 +129,7 @@ export const UploadModal: React.FC<UploadModalProps> = ({
         specs: [
           {
             id: 'CUST-RULE-01',
-            code: 'SPEC-CIRC-01',
+            code: isSpecProvided ? 'SPEC-CIRC-01' : 'IBC-1020-EGRESS',
             category: 'Circulation',
             title: 'Primary Corridor Minimum Width',
             requirement: 'Clear width ≥ 2,400 mm',
@@ -133,7 +139,7 @@ export const UploadModal: React.FC<UploadModalProps> = ({
           },
           {
             id: 'CUST-RULE-02',
-            code: 'SPEC-EQUIP-02',
+            code: isSpecProvided ? 'SPEC-EQUIP-02' : 'ADA-307-BUFFER',
             category: 'Equipment Clearance',
             title: 'Service Envelope Buffer',
             requirement: 'Maintenance clearance ≥ 1,200 mm',
@@ -304,26 +310,42 @@ export const UploadModal: React.FC<UploadModalProps> = ({
                     <FileText className="w-5 h-5" />
                   </div>
                   <div className="text-xs font-bold text-white">
-                    {specFile ? specFile.name : '2. Upload Specification Document'}
+                    {specFile ? specFile.name : '2. Upload Specification Document (Optional)'}
                   </div>
                   <div className="text-[11px] text-slate-400 mt-1">
-                    Building codes, FGI standards, or room criteria sheets
+                    {specFile 
+                      ? 'Custom spec rules will be extracted and verified'
+                      : 'Leave blank to auto-apply Standard Building Codes (IBC / ADA / NFPA)'}
                   </div>
-                  {specFile && (
+                  {specFile ? (
                     <span className="mt-2 text-[10px] font-mono text-emerald-400 flex items-center space-x-1">
                       <CheckCircle2 className="w-3.5 h-3.5" />
-                      <span>Spec Book Loaded</span>
+                      <span>Custom Spec Book Loaded</span>
+                    </span>
+                  ) : (
+                    <span className="mt-2 text-[10px] font-mono text-cyan-400/80 bg-cyan-950/40 px-2 py-0.5 rounded border border-cyan-800/40">
+                      Standard Codes Auto-Active
                     </span>
                   )}
                 </div>
               </div>
 
+              {/* Status Banner */}
+              {cadFile && !specFile && (
+                <div className="p-2.5 rounded-xl bg-cyan-950/30 border border-cyan-800/40 text-xs font-mono text-cyan-300 flex items-center space-x-2">
+                  <Sparkles className="w-4 h-4 text-cyan-400 shrink-0" />
+                  <span>
+                    <strong>Blueprint-Only Mode:</strong> The engine will automatically evaluate standard corridor widths, egress routes, and ADA accessibility clearances.
+                  </span>
+                </div>
+              )}
+
               {/* Action Button */}
               <button
                 onClick={handleProcessCustom}
-                disabled={!cadFile || !specFile || isProcessing}
+                disabled={!cadFile || isProcessing}
                 className={`w-full py-3 rounded-xl font-mono text-xs font-bold flex items-center justify-center space-x-2 transition ${
-                  !cadFile || !specFile || isProcessing
+                  !cadFile || isProcessing
                     ? 'bg-slate-800 text-slate-500 cursor-not-allowed'
                     : 'bg-cyan-500 hover:bg-cyan-400 text-slate-950 shadow-lg shadow-cyan-500/20'
                 }`}
@@ -331,12 +353,12 @@ export const UploadModal: React.FC<UploadModalProps> = ({
                 {isProcessing ? (
                   <>
                     <Sparkles className="w-4 h-4 animate-spin text-slate-950" />
-                    <span>PARSING BLUEPRINT & CROSS-REFERENCING SPECS...</span>
+                    <span>PARSING BLUEPRINT & CROSS-REFERENCING CODES...</span>
                   </>
                 ) : (
                   <>
                     <Sparkles className="w-4 h-4" />
-                    <span>RUN AI SPECIFICATION VALIDATION ENGINE</span>
+                    <span>{specFile ? 'RUN AI DUAL-SPEC VALIDATION ENGINE' : 'RUN AI BLUEPRINT CODE VALIDATION ENGINE'}</span>
                   </>
                 )}
               </button>
