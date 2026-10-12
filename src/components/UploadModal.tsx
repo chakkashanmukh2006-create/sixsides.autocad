@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { BlueprintDataset } from '../types';
 import { INITIAL_DATASETS } from '../data/mockDatasets';
+import { uploadBlueprint } from '../services/api';
 
 interface UploadModalProps {
   isOpen: boolean;
@@ -152,6 +153,18 @@ export const UploadModal: React.FC<UploadModalProps> = ({
         cadEntities: INITIAL_DATASETS[0].cadEntities,
         customImageUrl: previewUrl || undefined
       };
+
+      // Notify backend server for storage and validation
+      uploadBlueprint({
+        datasetName: customDataset.name,
+        facilityType: customDataset.facilityType,
+        cadFileName: cadFile.name,
+        specFileName: specFile?.name || '',
+        specRule: customDataset.specDocument.summary,
+        dimensionTarget: 'Primary Corridor Width',
+        minClearanceMm: 2400,
+        defectType: 'Life Safety'
+      });
 
       setIsProcessing(false);
       onSelectDataset(customDataset);

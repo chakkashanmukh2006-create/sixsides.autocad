@@ -6,6 +6,7 @@ import {
 import confetti from 'canvas-confetti';
 import { TrainingSample, TrainingState } from '../types';
 import { INITIAL_TRAINING_SAMPLES } from '../data/mockDatasets';
+import { getTrainingSamples, runTrainingJob } from '../services/api';
 
 interface TrainingStudioProps {
   onDeployTrainedModel: (newWeightsVersion: string) => void;
@@ -16,12 +17,18 @@ export const TrainingStudio: React.FC<TrainingStudioProps> = ({
   onDeployTrainedModel,
   activeWeights,
 }) => {
-  const [samples] = useState<TrainingSample[]>(INITIAL_TRAINING_SAMPLES);
+  const [samples, setSamples] = useState<TrainingSample[]>(INITIAL_TRAINING_SAMPLES);
   const [selectedDomain, setSelectedDomain] = useState<string>('ALL');
   const [backbone, setBackbone] = useState<string>('Spatial-ViT-LoRA');
   const [epochs, setEpochs] = useState<number>(10);
   const [learningRate, setLearningRate] = useState<number>(0.001);
   const [batchSize, setBatchSize] = useState<number>(4);
+
+  useEffect(() => {
+    getTrainingSamples().then(data => {
+      if (data && data.length > 0) setSamples(data);
+    });
+  }, []);
 
   const [trainingState, setTrainingState] = useState<TrainingState>({
     isTraining: false,

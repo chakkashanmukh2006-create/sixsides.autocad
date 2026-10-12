@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Building2, Cpu, UploadCloud, Layers, 
-  Sparkles, CheckCircle2, ChevronDown, Sliders, ExternalLink
+  Sparkles, CheckCircle2, ChevronDown, Sliders, ExternalLink, Server
 } from 'lucide-react';
 import { BlueprintDataset } from './types';
 import { INITIAL_DATASETS } from './data/mockDatasets';
@@ -9,14 +9,22 @@ import { CadViewer } from './components/CadViewer';
 import { PredictionsPanel } from './components/PredictionsPanel';
 import { TrainingStudio } from './components/TrainingStudio';
 import { UploadModal } from './components/UploadModal';
+import { 
+  getBackendHealth, 
+  getDatasets, 
+  toggleDefectResolution, 
+  deployModelWeights, 
+  HealthStatus 
+} from './services/api';
 
 export const App: React.FC = () => {
   const [datasets, setDatasets] = useState<BlueprintDataset[]>(INITIAL_DATASETS);
   const [currentDatasetId, setCurrentDatasetId] = useState<string>(INITIAL_DATASETS[0].id);
   const [selectedDefectId, setSelectedDefectId] = useState<string | null>(null);
   const [activeView, setActiveView] = useState<'workspace' | 'training'>('workspace');
-  const [activeWeights, setActiveWeights] = useState<string>('v2.4-Standard');
+  const [activeWeights, setActiveWeights] = useState<string>('v3.5-Universal-Kaggle');
   const [isUploadModalOpen, setIsUploadModalOpen] = useState<boolean>(false);
+  const [backendHealth, setBackendHealth] = useState<HealthStatus | null>(null);
 
   // Active layers state
   const [activeLayers, setActiveLayers] = useState<Record<string, boolean>>({
@@ -26,6 +34,24 @@ export const App: React.FC = () => {
     'EQUIPMENT': true,
     'DEFECTS': true,
   });
+
+  // Initial data loading from backend
+  useEffect(() => {
+    const initData = async () => {
+      const health = await getBackendHealth();
+      setBackendHealth(health);
+      if (health) {
+        if (health.activeWeights) {
+          setActiveWeights(health.activeWeights);
+        }
+        const serverDatasets = await getDatasets();
+        if (serverDatasets && serverDatasets.length > 0) {
+          setDatasets(serverDatasets);
+        }
+      }
+    };
+    initData();
+  }, []);
 
   const currentDataset = datasets.find(d => d.id === currentDatasetId) || datasets[0];
 
@@ -41,6 +67,7 @@ export const App: React.FC = () => {
   };
 
   const handleResolveDefect = (defectId: string) => {
+    // Optimistic client update
     setDatasets(prev => prev.map(ds => {
       if (ds.id !== currentDataset.id) return ds;
       return {
@@ -54,10 +81,16 @@ export const App: React.FC = () => {
         }),
       };
     }));
+
+    // Async backend persistence
+    toggleDefectResolution(currentDataset.id, defectId);
   };
 
   const handleDeployTrainedModel = (newWeightsVersion: string) => {
     setActiveWeights(newWeightsVersion);
+    // Async backend update
+    deployModelWeights(newWeightsVersion);
+
     // Recalibrate current dataset defect confidence scores to reflect newly trained weights
     setDatasets(prev => prev.map(ds => ({
       ...ds,
@@ -124,9 +157,18 @@ export const App: React.FC = () => {
             <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-2.5 top-2.5 pointer-events-none" />
           </div>
 
+          {/* Backend Connection Status Badge */}
+          <div className="glass-panel px-3 py-1.5 rounded-xl border border-slate-800 flex items-center space-x-2 text-xs font-mono">
+            <span className={`w-2 h-2 rounded-full ${backendHealth ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'}`}></span>
+            <span className="text-slate-400">BACKEND:</span>
+            <span className={backendHealth ? 'text-emerald-400 font-bold' : 'text-amber-400 font-bold'}>
+              {backendHealth ? 'CONNECTED (:5001)' : 'LOCAL MODE'}
+            </span>
+          </div>
+
           {/* Model Weights Badge */}
           <div className="glass-panel px-3 py-1.5 rounded-xl border border-slate-800 flex items-center space-x-2 text-xs font-mono">
-            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+            <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></span>
             <span className="text-slate-400">MODEL:</span>
             <span className="text-cyan-300 font-bold">{activeWeights}</span>
           </div>
