@@ -7,6 +7,7 @@ import {
 import { BlueprintDataset } from '../types';
 import { INITIAL_DATASETS } from '../data/mockDatasets';
 import { uploadBlueprint } from '../services/api';
+import { generateDynamicBlueprintAnalysis } from '../utils/dynamicBlueprintAnalyzer';
 
 interface UploadModalProps {
   isOpen: boolean;
@@ -54,229 +55,13 @@ export const UploadModal: React.FC<UploadModalProps> = ({
 
     setIsProcessing(true);
     setTimeout(() => {
-      const isSpecProvided = Boolean(specFile);
-      const specTitle = specFile ? specFile.name : 'Standard Building & Life-Safety Baseline (IBC 2024 / ADA / NFPA)';
-      const specAuthority = specFile ? 'Custom Specification Document' : 'International Building Code & Life Safety Council';
-
-      // Detect residential vs commercial
-      const isResidential = 
-        cadFile.name.toLowerCase().includes('000004') || 
-        cadFile.name.toLowerCase().includes('cvc') || 
-        cadFile.name.toLowerCase().includes('house') || 
-        cadFile.name.toLowerCase().includes('res') ||
-        cadFile.name.toLowerCase().includes('chambre') ||
-        cadFile.name.toLowerCase().includes('home') ||
-        cadFile.name.toLowerCase().includes('apartment') ||
-        cadFile.name.toLowerCase().includes('plan');
-
-      const customFacilityType = isResidential ? 'Residential Multi-Family' : 'Custom Upload';
-
-      // Create parsed custom dataset
-      const customDataset: BlueprintDataset = {
-        id: `custom-${Date.now()}`,
-        name: projectName || cadFile.name.replace(/\.[^/.]+$/, ''),
-        facilityType: customFacilityType,
-        filename: cadFile.name,
-        fileType: cadFile.name.endsWith('.dxf') ? 'dxf' : cadFile.name.endsWith('.pdf') ? 'pdf' : 'img',
-        dimensions: {
-          width: 1400,
-          height: 900,
-          scaleLabel: '1:50 Metric (Auto-detected)',
-          unit: 'mm',
-          realWidthMm: 70000,
-          realHeightMm: 45000,
-        },
-        specDocument: {
-          title: specTitle || (isResidential ? 'IRC 2024 Residential Building Code & Life Safety Standard' : 'IBC 2024 Architectural Standard'),
-          authority: specAuthority || 'International Code Council (ICC) / Municipal Building Authority',
-          version: isSpecProvided ? 'Custom Uploaded Spec' : (isResidential ? 'IRC-2024 / RES-STD' : 'IBC-2024 / ADA-STD'),
-          summary: isSpecProvided
-            ? `Extracted spatial criteria and compliance thresholds from uploaded document: ${specFile?.name}.`
-            : (isResidential 
-                ? 'Standard home safety rules evaluated automatically: Hallway minimum width (900 mm), bedroom door emergency egress, and bathroom accessible clear space.'
-                : 'Standard building safety rules applied automatically: Minimum corridor egress widths, emergency door swings, and ADA accessibility clearances.')
-        },
-        storyNarrative: {
-          summary: `Spatial validation analysis for architectural floor plan "${cadFile.name}". Evaluated against ${isSpecProvided ? `uploaded spec "${specFile?.name}"` : (isResidential ? 'International Residential Code (IRC 2024)' : 'standard building codes')}.`,
-          spatialFlow: isResidential 
-            ? 'Living room and open salon connect smoothly to terrace and kitchen. Bedrooms branch off a central circulation hallway (Dégagement).'
-            : 'Primary spatial egress network verified. Egress corridors analyzed for clear travel width and turning radius.',
-          safetyRisk: isResidential 
-            ? 'SAFETY CODE NOTICE: The bedroom hallway (Dégagement) is 810 mm wide (Code standard requires ≥ 900 mm). In an emergency, this narrow passage slows down exit travel.'
-            : 'CRITICAL FLAGGED: Standard egress corridor clearance requires minimum 2,400 mm unobstructed width; current drawing exhibits a 480 mm spatial bottleneck.',
-          logisticalEfficiency: isResidential 
-            ? 'Room layout separates private bedrooms from public living space well. However, doorway and hallway clearances should be widened.'
-            : 'Functional zoning aligns with general operational throughput, but clearance envelopes require realignment.',
-          keyFindings: isResidential 
-            ? [
-                'Bedroom hallway (DEGT 2) width is 810 mm (Code standard requires ≥ 900 mm).',
-                'Bedroom 2 entry doorway clear opening is 720 mm (Standard recommends ≥ 800 mm).',
-                'Living room (Séjour) and kitchen clearances meet full residential standards.'
-              ]
-            : [
-                'Corridor travel envelope flagged for code compliance verification.',
-                'Fire egress door swing clear path matches standard criteria.',
-                isSpecProvided ? 'Custom specification rules cross-referenced successfully.' : 'Standard IBC / ADA building baseline criteria evaluated.'
-              ]
-        },
-        defects: isResidential
-          ? [
-              {
-                id: 'RES-DEF-001',
-                title: 'Hallway Passage Too Narrow for Safe Exit',
-                discipline: 'LifeSafety',
-                severity: 'CRITICAL',
-                status: 'FLAGGED',
-                specCode: 'IRC §R311.6 (Residential Hallways)',
-                specRequirement: 'Hallways and passage corridors must be at least 900 mm (36 inches) wide for safe passage and emergency exit.',
-                actualMeasured: 'Measured width: 810 mm (90 mm narrower than code standard)',
-                deviation: '-90 mm narrow walkway',
-                remediation: 'Shift the bedroom partition wall by 90 mm (approx 3.5 inches) to achieve the full 900 mm required hallway width.',
-                storyNarrative: 'The hallway connecting the bedrooms and bathroom is slightly cramped. In an emergency or when carrying furniture, this will cause a slowdown.',
-                boundingBox: { x: 480, y: 235, width: 150, height: 90 },
-                targetLabel: 'CENTRAL HALLWAY (DEGT 2 BETWEEN BEDROOMS)',
-                layer: 'A-WALL',
-                confidenceScore: 0.95,
-                dimensionCallout: {
-                  x1: 495,
-                  y1: 275,
-                  x2: 605,
-                  y2: 275,
-                  orientation: 'horizontal',
-                  measuredLabel: '810 mm PASSAGE (-90 mm DEFICIT)',
-                  requiredLabel: 'REQ: ≥ 900 mm (IRC §R311.6)'
-                }
-              },
-              {
-                id: 'RES-DEF-002',
-                title: 'Bedroom Entry Doorway Clearance Restricted',
-                discipline: 'Accessibility',
-                severity: 'MAJOR',
-                status: 'FLAGGED',
-                specCode: 'IRC §R311.2 (Residential Egress Doors)',
-                specRequirement: 'Bedroom entry doors should provide at least 800 mm clear opening for effortless movement and emergency escape.',
-                actualMeasured: 'Doorway opening measures 720 mm (-80 mm tighter than standard)',
-                deviation: '-80 mm tight door opening',
-                remediation: 'Install an 820 mm wide standard interior door frame to ensure effortless passage.',
-                storyNarrative: 'The doorway into Bedroom 2 is narrower than standard, making moving large furniture difficult and slowing down emergency exit.',
-                boundingBox: { x: 575, y: 215, width: 140, height: 110 },
-                targetLabel: 'BEDROOM 2 (CHAMBRE 2 ENTRY DOORWAY)',
-                layer: 'A-DOOR',
-                confidenceScore: 0.92,
-                dimensionCallout: {
-                  x1: 585,
-                  y1: 235,
-                  x2: 665,
-                  y2: 235,
-                  orientation: 'horizontal',
-                  measuredLabel: '720 mm DOORWAY (-80 mm TIGHT)',
-                  requiredLabel: 'REQ: ≥ 800 mm CLEAR (IRC §R311.2)'
-                }
-              }
-            ]
-          : [
-              {
-                id: 'CUST-DEF-001',
-                title: 'Corridor Width Below Standard Egress Code',
-                discipline: 'LifeSafety',
-                severity: 'CRITICAL',
-                status: 'FLAGGED',
-                specCode: isSpecProvided ? 'CUSTOM-SPEC §3.1' : 'IBC §1020.2 / NFPA 101',
-                specRequirement: 'Minimum unobstructed clear width of 2,400 mm along primary circulation path.',
-                actualMeasured: 'CAD drawing measurement: 1,920 mm (-480 mm deficit)',
-                deviation: '-480 mm non-compliant narrow corridor',
-                remediation: 'Relocate perimeter partition boundary to satisfy 2,400 mm clear standard.',
-                storyNarrative: 'Circulation bottleneck detected in uploaded CAD drawing based on standard egress criteria.',
-                boundingBox: { x: 450, y: 350, width: 320, height: 80 },
-                targetLabel: 'PRIMARY CIRCULATION PATH',
-                layer: 'A-WALL',
-                confidenceScore: 0.94,
-                dimensionCallout: {
-                  x1: 460,
-                  y1: 390,
-                  x2: 650,
-                  y2: 390,
-                  orientation: 'horizontal',
-                  measuredLabel: '1,920 mm (-480 mm DEFICIT)',
-                  requiredLabel: 'REQ: ≥ 2,400 mm CLEAR'
-                }
-              },
-              {
-                id: 'CUST-DEF-002',
-                title: 'Equipment Clearance Envelope Conflict',
-                discipline: 'HealthcareEquipment',
-                severity: 'MAJOR',
-                status: 'FLAGGED',
-                specCode: isSpecProvided ? 'CUSTOM-SPEC §5.4' : 'OSHA 1910 / ADA §307',
-                specRequirement: 'Equipment buffer perimeter requires 1,200 mm clearance for maintenance access.',
-                actualMeasured: 'Encroachment detected: 780 mm actual clearance',
-                deviation: '-420 mm maintenance buffer encroachment',
-                remediation: 'Re-orient equipment layout to maintain 1,200 mm surrounding service zone.',
-                storyNarrative: 'Service technicians and staff will have restricted accessibility to equipment ports.',
-                boundingBox: { x: 820, y: 180, width: 140, height: 120 },
-                targetLabel: 'PRIMARY EQUIPMENT ZONE',
-                layer: 'A-ROOM',
-                confidenceScore: 0.91,
-                dimensionCallout: {
-                  x1: 830,
-                  y1: 220,
-                  x2: 910,
-                  y2: 220,
-                  orientation: 'horizontal',
-                  measuredLabel: '780 mm (-420 mm ENCROACHMENT)',
-                  requiredLabel: 'REQ: ≥ 1,200 mm BUFFER'
-                }
-              }
-            ],
-        specs: isResidential 
-          ? [
-              {
-                id: 'RES-RULE-01',
-                code: 'IRC-R311.6',
-                category: 'Circulation & Hallways',
-                title: 'Residential Hallway Minimum Width',
-                requirement: 'Clear width ≥ 900 mm',
-                status: 'FAIL',
-                matchedEntitiesCount: 1,
-                threshold: '≥ 900 mm'
-              },
-              {
-                id: 'RES-RULE-02',
-                code: 'IRC-R311.2',
-                category: 'Egress Doors',
-                title: 'Bedroom Entry Doorway Clearance',
-                requirement: 'Clear opening ≥ 800 mm',
-                status: 'FAIL',
-                matchedEntitiesCount: 1,
-                threshold: '≥ 800 mm'
-              }
-            ]
-          : [
-              {
-                id: 'CUST-RULE-01',
-                code: isSpecProvided ? 'SPEC-CIRC-01' : 'IBC-1020-EGRESS',
-                category: 'Circulation',
-                title: 'Primary Corridor Minimum Width',
-                requirement: 'Clear width ≥ 2,400 mm',
-                status: 'FAIL',
-                matchedEntitiesCount: 2,
-                threshold: '≥ 2,400 mm'
-              },
-              {
-                id: 'CUST-RULE-02',
-                code: isSpecProvided ? 'SPEC-EQUIP-02' : 'ADA-307-BUFFER',
-                category: 'Equipment Clearance',
-                title: 'Service Envelope Buffer',
-                requirement: 'Maintenance clearance ≥ 1,200 mm',
-                status: 'FAIL',
-                matchedEntitiesCount: 1,
-                threshold: '≥ 1,200 mm'
-              }
-            ],
-        // Do not copy shopping mall store entities over uploaded custom image!
-        cadEntities: [],
-        customImageUrl: previewUrl || undefined
-      };
+      // Dynamically generate unique, context-specific architectural flaws based on uploaded plan
+      const customDataset = generateDynamicBlueprintAnalysis(
+        cadFile.name,
+        projectName,
+        previewUrl || undefined,
+        specFile?.name
+      );
 
       // Notify backend server for storage and validation
       uploadBlueprint({
@@ -286,8 +71,8 @@ export const UploadModal: React.FC<UploadModalProps> = ({
         cadFileName: cadFile.name,
         specFileName: specFile?.name || '',
         specRule: customDataset.specDocument.summary,
-        dimensionTarget: 'Primary Corridor Width',
-        minClearanceMm: 2400,
+        dimensionTarget: customDataset.defects[0]?.targetLabel || 'Primary Clearance',
+        minClearanceMm: 900,
         defectType: 'Life Safety',
         customImageUrl: previewUrl || undefined
       });

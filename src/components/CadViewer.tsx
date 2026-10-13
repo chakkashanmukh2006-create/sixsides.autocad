@@ -40,6 +40,20 @@ export const CadViewer: React.FC<CadViewerProps> = ({
   const [hoveredDefectId, setHoveredDefectId] = useState<string | null>(null);
   const [showLayerMenu, setShowLayerMenu] = useState<boolean>(false);
   const [themeMode, setThemeMode] = useState<'blueprint' | 'matrix' | 'monochrome'>('blueprint');
+  const [loadedImage, setLoadedImage] = useState<HTMLImageElement | null>(null);
+
+  // Load custom uploaded image once and cache
+  useEffect(() => {
+    if (!dataset.customImageUrl) {
+      setLoadedImage(null);
+      return;
+    }
+    const img = new Image();
+    img.src = dataset.customImageUrl;
+    img.onload = () => {
+      setLoadedImage(img);
+    };
+  }, [dataset.customImageUrl]);
 
   // Animation frame ref for smooth camera fly-to
   const animRef = useRef<number | null>(null);
@@ -278,27 +292,8 @@ export const CadViewer: React.FC<CadViewerProps> = ({
     ctx.fillText(`DISCIPLINE: HEALTHCARE ARCH / MEP / LIFE-SAFETY`, tbX + 14, tbY + 96);
 
     // 2. Draw Custom Uploaded Blueprint Image (if any)
-    if (dataset.customImageUrl) {
-      const img = new Image();
-      img.src = dataset.customImageUrl;
-      if (img.complete && img.naturalWidth > 0) {
-        ctx.drawImage(img, 100, 80, dataset.dimensions.width - 200, dataset.dimensions.height - 160);
-      } else {
-        img.onload = () => {
-          // Trigger canvas repaint when image finishes loading
-          const c = canvasRef.current;
-          if (c) {
-            const context = c.getContext('2d');
-            if (context) {
-              context.save();
-              context.translate(offset.x, offset.y);
-              context.scale(scale, scale);
-              context.drawImage(img, 100, 80, dataset.dimensions.width - 200, dataset.dimensions.height - 160);
-              context.restore();
-            }
-          }
-        };
-      }
+    if (loadedImage) {
+      ctx.drawImage(loadedImage, 100, 80, dataset.dimensions.width - 200, dataset.dimensions.height - 160);
     }
 
     // 3. Render CAD Vector Entities
@@ -715,7 +710,7 @@ export const CadViewer: React.FC<CadViewerProps> = ({
     ctx.restore();
   }, [
     dataset, scale, offset, selectedDefectId, hoveredDefectId, 
-    activeLayers, measureMode, measureStart, measureCurrent, themeMode
+    activeLayers, measureMode, measureStart, measureCurrent, themeMode, loadedImage
   ]);
 
   return (

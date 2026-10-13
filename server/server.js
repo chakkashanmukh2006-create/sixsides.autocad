@@ -155,7 +155,7 @@ app.post('/api/datasets/upload', (req, res) => {
           title: `Non-Compliant ${targetDimension} Clearance`,
           description: `The measured ${targetDimension} is ${measuredVal}mm, violating the mandatory code threshold of ${clearance}mm by ${(clearance - measuredVal)}mm.`,
           severity: 'CRITICAL',
-          discipline: defectType === 'Fire Safety' ? 'FireSafety' : 'LifeSafety',
+          discipline: 'LifeSafety',
           status: 'FLAGGED',
           specCode: 'IRC §R311.6 / IBC §1005.1',
           specRequirement: `Requires minimum clear envelope of ${clearance}mm for safe passage and emergency exit.`,
