@@ -23,8 +23,8 @@ export function generateDynamicBlueprintAnalysis(
   let profileIndex = seed % 5;
   if (lower.includes('000016')) {
     profileIndex = 0; // Staircase + Kitchen Work Aisle (matches 000016 layout)
-  } else if (lower.includes('000004')) {
-    profileIndex = 2; // French Villa Hallway + Bedroom (matches 000004 layout)
+  } else if (lower.includes('000004') || lower.includes('000012')) {
+    profileIndex = 2; // French Villa Garage Separation + Hallway (matches 000004/000012 layout)
   } else if (lower.includes('garage') || lower.includes('car')) {
     profileIndex = 1; // Garage Fire Separation
   } else if (lower.includes('window') || lower.includes('entry') || lower.includes('porch')) {
@@ -224,74 +224,84 @@ export function generateDynamicBlueprintAnalysis(
       ]
     },
 
-    // 2: French Villa Bedroom Hallway & Emergency Window Egress (Matches 000004)
+    // 2: French Villa Garage Separation & Bedroom Hallway (Matches 000004 & 000012)
     {
       facilityType: 'Residential Multi-Family',
-      specTitle: 'IRC 2024 Chapter 3 (Residential Egress & Sleeping Rooms)',
+      specTitle: 'IRC 2024 Chapter 3 (Garage Fire Separation & Hallway Circulation)',
       authority: 'European & International Residential Building Code Council',
-      summary: `Automated code compliance inspection for "${fileName}". Evaluated bedroom circulation hallway (Dégagement) and emergency window escape sizes.`,
-      spatialFlow: 'Living salon and dining room open into kitchen and terrace. Sleeping rooms branch from a central circulation hallway (Dégagement).',
-      safetyRisk: 'SAFETY CODE NOTICE: The bedroom hallway is 810 mm wide (Code requires ≥ 900 mm). In a fire emergency, this restricts rapid room evacuation.',
+      summary: `Automated code compliance inspection for "${fileName}". Evaluated attached garage fire separation (adjacent to Chambre 3) and central bedroom circulation corridor (Dégagement).`,
+      spatialFlow: 'Attached garage and covered entry connect past kitchen and living areas to the sleeping quarters (Chambres 1, 2, 3) through a central hallway (Dégagement).',
+      safetyRisk: 'LIFE-SAFETY DEFICIT: The demising partition separating the Garage from Bedroom 3 lacks required 15.9 mm Type-X fire protection, and the bedroom hallway (DEGT.) is restricted to 810 mm width.',
       keyFindings: [
-        'Bedroom circulation hallway (DEGT 2) width is 810 mm (Code requires ≥ 900 mm).',
-        'Bedroom 2 emergency egress window clear opening is 0.42 m² (IRC requires ≥ 0.53 m²).',
-        'Terrace and primary living salon clearances satisfy all residential standards.'
+        'Garage partition wall adjacent to Chambre 3 specified with 12.7 mm unrated board (IRC §R302.6 mandates ≥ 15.9 mm Type-X gypsum).',
+        'Bedroom circulation hallway (DEGT.) width is 810 mm (IRC §R311.6 mandates minimum 900 mm clear width).',
+        'Terrace, dining (Repas), and living salon clearances satisfy all residential standards.'
       ],
       defects: [
         {
-          id: 'RES-HAL-01',
-          title: 'Bedroom Hallway Width Below Code',
+          id: 'RES-GAR-01',
+          title: 'Garage to Living Area Fire Separation Deficit',
           discipline: 'LifeSafety',
           severity: 'CRITICAL',
           status: 'FLAGGED',
+          specCode: 'IRC §R302.6 (Dwelling-Garage Separation)',
+          specRequirement: 'Walls separating attached garages from habitable rooms/bedrooms must be protected with not less than 15.9 mm (5/8 inch) Type-X gypsum board.',
+          actualMeasured: '12.7 mm standard drywall specified on bedroom 3 demising partition (-3.2 mm board deficit)',
+          deviation: 'Substandard non-rated drywall on garage partition',
+          remediation: 'Upgrade the garage-side demising partition adjacent to Bedroom 3 (Chambre 3) with 15.9 mm (5/8") Type-X fire-rated drywall.',
+          storyNarrative: 'The garage wall next to Bedroom 3 (Chambre 3) lacks fire-resistant drywall. In a vehicle fire, flames or smoke could spread into the bedroom in under 20 minutes.',
+          boundingBox: { x: 300, y: 220, width: 210, height: 100 },
+          targetLabel: 'GARAGE DEMISING WALL (ADJACENT TO CHAMBRE 3)',
+          layer: 'A-WALL',
+          confidenceScore: 0.96,
+          dimensionCallout: {
+            x1: 315,
+            y1: 270,
+            x2: 495,
+            y2: 270,
+            orientation: 'horizontal',
+            measuredLabel: '12.7 mm NON-RATED BOARD (-3.2 mm DEFICIT)',
+            requiredLabel: 'REQ: ≥ 15.9 mm (5/8") TYPE-X GYPSUM'
+          }
+        },
+        {
+          id: 'RES-HAL-01',
+          title: 'Bedroom Circulation Hallway (DEGT.) Width Below Code',
+          discipline: 'LifeSafety',
+          severity: 'MAJOR',
+          status: 'FLAGGED',
           specCode: 'IRC §R311.6 (Residential Hallways)',
           specRequirement: 'Hallways and passage corridors must be at least 900 mm (36 inches) wide for safe passage and emergency exit.',
-          actualMeasured: 'Measured width: 810 mm (90 mm narrower than code standard)',
+          actualMeasured: 'Measured hallway width: 810 mm (90 mm narrower than code standard)',
           deviation: '-90 mm narrow walkway',
-          remediation: 'Shift the bedroom partition wall by 90 mm to achieve the standard 900 mm hallway width.',
-          storyNarrative: 'The hallway connecting the bedrooms and bathroom is slightly cramped. In an emergency or when carrying furniture, this will cause a slowdown.',
-          boundingBox: { x: 480, y: 235, width: 150, height: 90 },
-          targetLabel: 'BEDROOM HALLWAY (DEGT 2)',
+          remediation: 'Shift the bedroom partition wall by 90 mm to achieve the standard 900 mm hallway clearance.',
+          storyNarrative: 'The hallway (labeled DEGT.) between Bedroom 1 and Bedroom 2 is only 810 mm wide (Code requires ≥ 900 mm). In an emergency, it creates an evacuation bottleneck.',
+          boundingBox: { x: 535, y: 320, width: 75, height: 85 },
+          targetLabel: 'BEDROOM CIRCULATION HALLWAY (DEGT.)',
           layer: 'A-WALL',
-          confidenceScore: 0.95,
+          confidenceScore: 0.94,
           dimensionCallout: {
-            x1: 495,
-            y1: 275,
+            x1: 540,
+            y1: 360,
             x2: 605,
-            y2: 275,
+            y2: 360,
             orientation: 'horizontal',
             measuredLabel: '810 mm PASSAGE (-90 mm DEFICIT)',
             requiredLabel: 'REQ: ≥ 900 mm (IRC §R311.6)'
           }
-        },
-        {
-          id: 'RES-WIN-02',
-          title: 'Bedroom Emergency Escape Window Opening Restricted',
-          discipline: 'LifeSafety',
-          severity: 'MAJOR',
-          status: 'FLAGGED',
-          specCode: 'IRC §R310.2.1 (Emergency Escape Openings)',
-          specRequirement: 'Emergency escape windows in sleeping rooms must have minimum net clear opening of 0.53 m² (5.7 sq ft).',
-          actualMeasured: '0.42 m² net clear opening (-0.11 m² deficient)',
-          deviation: '-0.11 m² undersized emergency escape opening',
-          remediation: 'Replace window unit with a 650 mm x 900 mm casement window satisfying IRC emergency escape code.',
-          storyNarrative: 'If a hallway fire blocks the bedroom door, occupants cannot safely escape through the undersized window opening.',
-          boundingBox: { x: 575, y: 215, width: 140, height: 110 },
-          targetLabel: 'BEDROOM 2 (CHAMBRE 2 WINDOW OPENING)',
-          layer: 'A-DOOR',
-          confidenceScore: 0.92,
-          dimensionCallout: {
-            x1: 585,
-            y1: 235,
-            x2: 665,
-            y2: 235,
-            orientation: 'horizontal',
-            measuredLabel: '0.42 m² OPENING (-0.11 m² DEFICIT)',
-            requiredLabel: 'REQ: ≥ 0.53 m² (IRC §R310)'
-          }
         }
       ],
       specs: [
+        {
+          id: 'RULE-GAR-01',
+          code: 'IRC-R302.6',
+          category: 'Fire Separation',
+          title: 'Garage Separation Wall Fire Rating',
+          requirement: 'Cladding ≥ 15.9 mm (5/8") Type-X Gypsum',
+          threshold: '≥ 15.9 mm Type-X',
+          status: 'FAIL',
+          matchedEntitiesCount: 1
+        },
         {
           id: 'RULE-HAL-01',
           code: 'IRC-R311.6',
@@ -299,16 +309,6 @@ export function generateDynamicBlueprintAnalysis(
           title: 'Residential Hallway Minimum Width',
           requirement: 'Clear width ≥ 900 mm',
           threshold: '≥ 900 mm',
-          status: 'FAIL',
-          matchedEntitiesCount: 1
-        },
-        {
-          id: 'RULE-WIN-02',
-          code: 'IRC-R310.2.1',
-          category: 'Emergency Egress',
-          title: 'Bedroom Egress Window Opening',
-          requirement: 'Net clear opening ≥ 0.53 m² (5.7 sq ft)',
-          threshold: '≥ 0.53 m²',
           status: 'FAIL',
           matchedEntitiesCount: 1
         }
