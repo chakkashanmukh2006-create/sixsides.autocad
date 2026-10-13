@@ -87,6 +87,30 @@ export async function uploadBlueprint(payload: {
   }
 }
 
+// 3b. Real AI Optical Vision Analysis
+export async function analyzeBlueprintWithAI(payload: {
+  imageBase64: string;
+  fileName: string;
+  projectName?: string;
+  specFileName?: string;
+  naturalWidth?: number;
+  naturalHeight?: number;
+}): Promise<BlueprintDataset | null> {
+  try {
+    const res = await fetch(`${API_BASE}/analyze/blueprint`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    if (!res.ok) throw new Error('AI analysis failed');
+    const data = await res.json();
+    return data.dataset;
+  } catch (err) {
+    console.warn('[CAD-Spec API] AI optical vision analysis failed or backend unreachable:', err);
+    return null;
+  }
+}
+
 // 4. Toggle Defect Status
 export async function toggleDefectResolution(datasetId: string, defectId: string): Promise<boolean> {
   try {

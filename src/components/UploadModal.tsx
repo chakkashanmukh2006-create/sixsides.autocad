@@ -6,7 +6,7 @@ import {
 } from 'lucide-react';
 import { BlueprintDataset } from '../types';
 import { INITIAL_DATASETS } from '../data/mockDatasets';
-import { uploadBlueprint } from '../services/api';
+import { uploadBlueprint, analyzeBlueprintWithAI } from '../services/api';
 import { generateDynamicBlueprintAnalysis } from '../utils/dynamicBlueprintAnalyzer';
 
 interface UploadModalProps {
@@ -27,6 +27,7 @@ export const UploadModal: React.FC<UploadModalProps> = ({
   const [specFile, setSpecFile] = useState<File | null>(null);
   const [projectName, setProjectName] = useState<string>('');
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
+  const [scanPhase, setScanPhase] = useState<string>('AI OPTICAL SCANNING BLUEPRINT...');
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
   if (!isOpen) return null;
@@ -50,37 +51,85 @@ export const UploadModal: React.FC<UploadModalProps> = ({
     }
   };
 
-  const handleProcessCustom = () => {
+  const handleProcessCustom = async () => {
     if (!cadFile) return;
 
     setIsProcessing(true);
-    setTimeout(() => {
-      // Dynamically generate unique, context-specific architectural flaws based on uploaded plan
-      const customDataset = generateDynamicBlueprintAnalysis(
+    setScanPhase('OPTICAL VISION SCAN: Reading Architectural Rooms & Text via OCR...');
+
+    try {
+      let base64String = previewUrl || '';
+      let naturalWidth = 1400;
+      let naturalHeight = 900;
+
+      // Convert file to base64 data URL if it's an image
+      if (cadFile.type.startsWith('image/')) {
+        const base64Promise = new Promise<string>((resolve) => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve(reader.result as string);
+          reader.readAsDataURL(cadFile);
+        });
+        base64String = await base64Promise;
+
+        // Measure natural pixel dimensions of user drawing
+        const dimPromise = new Promise<{ w: number; h: number }>((resolve) => {
+          const img = new Image();
+          img.onload = () => resolve({ w: img.naturalWidth || 1400, h: img.naturalHeight || 900 });
+          img.onerror = () => resolve({ w: 1400, h: 900 });
+          img.src = base64String;
+        });
+        const dims = await dimPromise;
+        naturalWidth = dims.w;
+        naturalHeight = dims.h;
+      }
+
+      setScanPhase('AI SPATIAL ANALYSIS: Detecting Room Coordinates & Corridor Envelopes...');
+
+      // Call real optical vision backend
+      let analyzedDataset: BlueprintDataset | null = null;
+      if (base64String) {
+        analyzedDataset = await analyzeBlueprintWithAI({
+          imageBase64: base64String,
+          fileName: cadFile.name,
+          projectName,
+          specFileName: specFile?.name,
+          naturalWidth,
+          naturalHeight
+        });
+      }
+
+      setScanPhase('CODE AUDIT: Cross-referencing IRC 2024 Building & Life-Safety Mandates...');
+
+      // If backend vision returned dataset, use it; otherwise fallback to dynamic analyzer
+      const customDataset = analyzedDataset || generateDynamicBlueprintAnalysis(
         cadFile.name,
         projectName,
         previewUrl || undefined,
         specFile?.name
       );
 
-      // Notify backend server for storage and validation
-      uploadBlueprint({
-        dataset: customDataset,
-        datasetName: customDataset.name,
-        facilityType: customDataset.facilityType,
-        cadFileName: cadFile.name,
-        specFileName: specFile?.name || '',
-        specRule: customDataset.specDocument.summary,
-        dimensionTarget: customDataset.defects[0]?.targetLabel || 'Primary Clearance',
-        minClearanceMm: 900,
-        defectType: 'Life Safety',
-        customImageUrl: previewUrl || undefined
-      });
+      // Ensure customImageUrl is retained so CadViewer displays the uploaded image
+      if (previewUrl && !customDataset.customImageUrl) {
+        customDataset.customImageUrl = previewUrl;
+      }
 
+      setTimeout(() => {
+        setIsProcessing(false);
+        onSelectDataset(customDataset);
+        onClose();
+      }, 500);
+    } catch (err) {
+      console.error('Custom AI upload analysis error:', err);
+      const fallbackDataset = generateDynamicBlueprintAnalysis(
+        cadFile.name,
+        projectName,
+        previewUrl || undefined,
+        specFile?.name
+      );
       setIsProcessing(false);
-      onSelectDataset(customDataset);
+      onSelectDataset(fallbackDataset);
       onClose();
-    }, 1200);
+    }
   };
 
   return (
@@ -282,7 +331,7 @@ export const UploadModal: React.FC<UploadModalProps> = ({
                 {isProcessing ? (
                   <>
                     <Sparkles className="w-4 h-4 animate-spin text-slate-950" />
-                    <span>PARSING BLUEPRINT & CROSS-REFERENCING CODES...</span>
+                    <span>{scanPhase}</span>
                   </>
                 ) : (
                   <>

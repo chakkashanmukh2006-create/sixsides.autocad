@@ -1,6 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import { INITIAL_DATASETS, INITIAL_TRAINING_SAMPLES } from './data/datasets.js';
+import { analyzeBlueprintWithVision } from './blueprintVision.js';
 
 const app = express();
 const PORT = process.env.PORT || 5001;
@@ -70,6 +71,43 @@ app.patch('/api/datasets/:id/defects/:defectId', (req, res) => {
 
   defect.status = defect.status === 'RESOLVED' ? 'FLAGGED' : 'RESOLVED';
   res.json({ success: true, defect });
+});
+
+// 4b. AI Optical Computer Vision Blueprint Analysis
+app.post('/api/analyze/blueprint', async (req, res) => {
+  try {
+    const { imageBase64, fileName, projectName, specFileName, naturalWidth, naturalHeight } = req.body;
+    if (!imageBase64) {
+      return res.status(400).json({ success: false, message: 'Image data is required' });
+    }
+
+    // Convert base64 data URL to Buffer
+    const base64Data = imageBase64.replace(/^data:image\/\w+;base64,/, '');
+    const imageBuffer = Buffer.from(base64Data, 'base64');
+
+    const dataset = await analyzeBlueprintWithVision({
+      imageBuffer,
+      fileName: fileName || 'UPLOADED_BLUEPRINT.png',
+      projectName,
+      specFileName,
+      naturalWidth: Number(naturalWidth) || 1400,
+      naturalHeight: Number(naturalHeight) || 900
+    });
+
+    dataset.customImageUrl = imageBase64;
+
+    // Ingest into active datasets
+    datasets = datasets.filter(d => d.id !== dataset.id);
+    datasets.unshift(dataset);
+
+    res.status(200).json({
+      success: true,
+      dataset
+    });
+  } catch (err) {
+    console.error('[API-VISION ERROR]', err);
+    res.status(500).json({ success: false, message: err.message });
+  }
 });
 
 // 5. Upload & Process Blueprint
