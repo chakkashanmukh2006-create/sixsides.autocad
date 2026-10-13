@@ -75,6 +75,28 @@ app.patch('/api/datasets/:id/defects/:defectId', (req, res) => {
 // 5. Upload & Process Blueprint
 app.post('/api/datasets/upload', (req, res) => {
   try {
+    // If full dataset object is passed from frontend, ingest it directly with validation
+    if (req.body.dataset) {
+      const ds = req.body.dataset;
+      ds.specs = ds.specs || ds.rules || [];
+      ds.defects = (ds.defects || []).map(d => ({
+        ...d,
+        boundingBox: d.boundingBox || d.bounds || { x: 450, y: 350, width: 200, height: 100 },
+        severity: ['CRITICAL', 'MAJOR', 'MINOR'].includes(d.severity) ? d.severity : 'CRITICAL'
+      }));
+      ds.cadEntities = ds.cadEntities || [];
+      
+      // Replace if id exists, otherwise unshift
+      datasets = datasets.filter(d => d.id !== ds.id);
+      datasets.unshift(ds);
+
+      return res.status(201).json({
+        success: true,
+        message: 'Blueprint and specification ingested successfully',
+        dataset: ds
+      });
+    }
+
     const { 
       datasetName, 
       facilityType, 
@@ -83,27 +105,15 @@ app.post('/api/datasets/upload', (req, res) => {
       specRule, 
       dimensionTarget, 
       minClearanceMm, 
-      defectType 
+      defectType,
+      customImageUrl
     } = req.body;
 
     const newId = `upload-${Date.now()}`;
     const name = datasetName || `Custom Project: ${cadFileName || 'Blueprint'}`;
-    const facType = facilityType || 'Commercial Architecture';
-    const filename = cadFileName || 'UPLOADED_BLUEPRINT.dxf';
+    const facType = facilityType || 'Residential Multi-Family';
+    const filename = cadFileName || 'UPLOADED_BLUEPRINT.png';
     const clearance = Number(minClearanceMm) || 2400;
-
-    // Build synthesized architectural CAD geometry based on domain
-    const entities = [
-      { id: 'w1', type: 'wall', layer: 'A-WALL', x: 100, y: 80, x2: 1300, y2: 80 },
-      { id: 'w2', type: 'wall', layer: 'A-WALL', x: 1300, y: 80, x2: 1300, y2: 780 },
-      { id: 'w3', type: 'wall', layer: 'A-WALL', x: 1300, y: 780, x2: 100, y2: 780 },
-      { id: 'w4', type: 'wall', layer: 'A-WALL', x: 100, y: 780, x2: 100, y2: 80 },
-      { id: 'w5', type: 'wall', layer: 'A-WALL', x: 500, y: 80, x2: 500, y2: 780 },
-      { id: 'r1', type: 'room', layer: 'A-ROOM', x: 120, y: 100, width: 360, height: 660, label: 'MAIN PRIMARY SUITE' },
-      { id: 'r2', type: 'room', layer: 'A-ROOM', x: 520, y: 100, width: 760, height: 660, label: 'CIRCULATION & LOGISTICS BAY' },
-      { id: 'cor1', type: 'corridor', layer: 'A-CORRIDOR', x: 520, y: 350, width: 760, height: 120, label: 'PRIMARY EGRESS CORRIDOR' },
-      { id: 'd1', type: 'door', layer: 'A-DOOR', x: 500, y: 380, width: 30, height: 60, label: 'EGRESS ACCESS DOOR' }
-    ];
 
     const targetDimension = dimensionTarget || 'Primary Corridor Width';
     const measuredVal = Math.round(clearance * 0.72);
@@ -113,14 +123,14 @@ app.post('/api/datasets/upload', (req, res) => {
       name,
       facilityType: facType,
       filename,
-      fileType: filename.endsWith('.dwg') ? 'dwg' : filename.endsWith('.pdf') ? 'pdf' : 'dxf',
+      fileType: filename.endsWith('.dwg') ? 'dwg' : filename.endsWith('.pdf') ? 'pdf' : filename.endsWith('.dxf') ? 'dxf' : 'img',
       dimensions: {
         width: 1400,
         height: 900,
-        scaleLabel: '1:100 Metric (1mm = 100mm)',
+        scaleLabel: '1:50 Metric (Auto-detected)',
         unit: 'mm',
-        realWidthMm: 140000,
-        realHeightMm: 90000,
+        realWidthMm: 70000,
+        realHeightMm: 45000,
       },
       specDocument: {
         title: specFileName ? `Parsed Specification: ${specFileName}` : 'Baseline Statutory Building & Life-Safety Standard',
@@ -129,10 +139,10 @@ app.post('/api/datasets/upload', (req, res) => {
         summary: specRule || `Mandatory architectural spatial standards for ${facType}. Minimum required dimension: ${clearance}mm.`
       },
       storyNarrative: {
-        summary: `Automated architectural compliance evaluation for ${name}. The universal validation engine parsed structural partitions, egress routes, and dimension clear envelopes.`,
-        spatialFlow: 'Primary flow passes through main suite into the primary egress corridor with access to emergency exit corridors.',
+        summary: `Automated architectural compliance evaluation for ${name}. The validation engine evaluated structural partitions, circulation walkways, and clearance envelopes.`,
+        spatialFlow: 'Primary flow connects main entrance to primary rooms via central circulation hallways.',
         safetyRisk: `NON-COMPLIANCE DETECTED: The measured clearance of ${measuredVal}mm fails the statutory code requirement of ${clearance}mm by ${(clearance - measuredVal)}mm.`,
-        logisticalEfficiency: 'Spatial distribution is optimal for primary operations, but requires perimeter correction to satisfy egress regulations.',
+        logisticalEfficiency: 'Spatial distribution is optimal for primary operations, but walkway clearances require widening.',
         keyFindings: [
           `Identified 1 statutory defect under ${defectType || 'Life Safety'}`,
           `Geometric deviation: ${measuredVal}mm measured vs ${clearance}mm required`,
@@ -143,42 +153,48 @@ app.post('/api/datasets/upload', (req, res) => {
         {
           id: `DEF-UPL-${Date.now()}`,
           title: `Non-Compliant ${targetDimension} Clearance`,
-          description: `The measured ${targetDimension} in the primary corridor is ${measuredVal}mm, violating the mandatory code threshold of ${clearance}mm by ${(clearance - measuredVal)}mm.`,
-          severity: 'HIGH',
+          description: `The measured ${targetDimension} is ${measuredVal}mm, violating the mandatory code threshold of ${clearance}mm by ${(clearance - measuredVal)}mm.`,
+          severity: 'CRITICAL',
           discipline: defectType === 'Fire Safety' ? 'FireSafety' : 'LifeSafety',
           status: 'FLAGGED',
-          clauseReference: 'Municipal Architectural Code § 1005.1',
-          measuredValue: `${measuredVal}mm`,
-          requiredValue: `≥ ${clearance}mm`,
-          confidenceScore: 0.96,
-          bounds: { x: 540, y: 350, width: 280, height: 120 },
+          specCode: 'IRC §R311.6 / IBC §1005.1',
+          specRequirement: `Requires minimum clear envelope of ${clearance}mm for safe passage and emergency exit.`,
+          actualMeasured: `Measured width: ${measuredVal}mm (${(clearance - measuredVal)}mm narrower than code standard)`,
+          deviation: `-${(clearance - measuredVal)}mm narrow passage`,
+          remediation: `Shift the partition wall by ${(clearance - measuredVal)}mm to achieve the required ${clearance}mm standard width.`,
+          storyNarrative: `The passage is slightly tight. In an emergency or when carrying furniture, this will cause a slowdown.`,
+          confidenceScore: 0.95,
+          boundingBox: { x: 500, y: 300, width: 220, height: 110 },
           targetLabel: targetDimension,
-          layer: 'A-CORRIDOR',
+          layer: 'A-WALL',
           dimensionCallout: {
-            x1: 540,
-            y1: 350,
-            x2: 540,
-            y2: 470,
-            orientation: 'vertical',
-            measuredLabel: `${measuredVal}mm`,
+            x1: 510,
+            y1: 355,
+            x2: 710,
+            y2: 355,
+            orientation: 'horizontal',
+            measuredLabel: `${measuredVal}mm (-${clearance - measuredVal}mm DEFICIT)`,
             requiredLabel: `REQ: ≥${clearance}mm`
           }
         }
       ],
-      rules: [
+      specs: [
         {
           id: 'RULE-UPL-1',
-          category: defectType || 'Egress Standards',
-          clause: 'Municipal Architectural Code § 1005.1',
-          description: `Requires minimum clear envelope of ${clearance}mm for ${targetDimension}.`,
+          code: 'IRC-R311.6',
+          category: defectType || 'Circulation & Egress',
+          title: `${targetDimension} Minimum Width`,
+          requirement: `Clear width ≥ ${clearance}mm`,
           threshold: `≥ ${clearance}mm`,
-          status: 'FAIL'
+          status: 'FAIL',
+          matchedEntitiesCount: 1
         }
       ],
-      cadEntities: entities
+      cadEntities: [],
+      customImageUrl: customImageUrl || undefined
     };
 
-    // Prepend to server datasets array
+    datasets = datasets.filter(d => d.id !== newDataset.id);
     datasets.unshift(newDataset);
 
     res.status(201).json({

@@ -61,14 +61,16 @@ export async function getDatasets(): Promise<BlueprintDataset[]> {
 
 // 3. Upload and Process Blueprint
 export async function uploadBlueprint(payload: {
-  datasetName: string;
-  facilityType: string;
-  cadFileName: string;
-  specFileName: string;
-  specRule: string;
-  dimensionTarget: string;
-  minClearanceMm: number;
-  defectType: string;
+  dataset?: BlueprintDataset;
+  datasetName?: string;
+  facilityType?: string;
+  cadFileName?: string;
+  specFileName?: string;
+  specRule?: string;
+  dimensionTarget?: string;
+  minClearanceMm?: number;
+  defectType?: string;
+  customImageUrl?: string;
 }): Promise<BlueprintDataset | null> {
   try {
     const res = await fetch(`${API_BASE}/datasets/upload`, {

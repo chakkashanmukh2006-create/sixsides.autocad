@@ -280,6 +280,7 @@ export const UploadModal: React.FC<UploadModalProps> = ({
 
       // Notify backend server for storage and validation
       uploadBlueprint({
+        dataset: customDataset,
         datasetName: customDataset.name,
         facilityType: customDataset.facilityType,
         cadFileName: cadFile.name,
@@ -287,7 +288,8 @@ export const UploadModal: React.FC<UploadModalProps> = ({
         specRule: customDataset.specDocument.summary,
         dimensionTarget: 'Primary Corridor Width',
         minClearanceMm: 2400,
-        defectType: 'Life Safety'
+        defectType: 'Life Safety',
+        customImageUrl: previewUrl || undefined
       });
 
       setIsProcessing(false);

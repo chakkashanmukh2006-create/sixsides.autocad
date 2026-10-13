@@ -185,8 +185,10 @@ export const CadViewer: React.FC<CadViewerProps> = ({
 
       // Check hovered defect
       if (activeLayers['DEFECTS']) {
-        const hovered = dataset.defects.find(d => {
-          const { x, y, width, height } = d.boundingBox;
+        const hovered = (dataset.defects || []).find(d => {
+          const box = d.boundingBox || (d as any).bounds;
+          if (!box) return false;
+          const { x, y, width, height } = box;
           return canvasX >= x && canvasX <= x + width && canvasY >= y && canvasY <= y + height;
         });
         setHoveredDefectId(hovered ? hovered.id : null);
@@ -213,8 +215,10 @@ export const CadViewer: React.FC<CadViewerProps> = ({
     const canvasX = (e.clientX - rect.left - offset.x) / scale;
     const canvasY = (e.clientY - rect.top - offset.y) / scale;
 
-    const clickedDefect = dataset.defects.find(d => {
-      const { x, y, width, height } = d.boundingBox;
+    const clickedDefect = (dataset.defects || []).find(d => {
+      const box = d.boundingBox || (d as any).bounds;
+      if (!box) return false;
+      const { x, y, width, height } = box;
       return canvasX >= x && canvasX <= x + width && canvasY >= y && canvasY <= y + height;
     });
 
@@ -277,13 +281,28 @@ export const CadViewer: React.FC<CadViewerProps> = ({
     if (dataset.customImageUrl) {
       const img = new Image();
       img.src = dataset.customImageUrl;
-      if (img.complete) {
+      if (img.complete && img.naturalWidth > 0) {
         ctx.drawImage(img, 100, 80, dataset.dimensions.width - 200, dataset.dimensions.height - 160);
+      } else {
+        img.onload = () => {
+          // Trigger canvas repaint when image finishes loading
+          const c = canvasRef.current;
+          if (c) {
+            const context = c.getContext('2d');
+            if (context) {
+              context.save();
+              context.translate(offset.x, offset.y);
+              context.scale(scale, scale);
+              context.drawImage(img, 100, 80, dataset.dimensions.width - 200, dataset.dimensions.height - 160);
+              context.restore();
+            }
+          }
+        };
       }
     }
 
     // 3. Render CAD Vector Entities
-    dataset.cadEntities.forEach(ent => {
+    (dataset.cadEntities || []).forEach(ent => {
       // Check layer visibility
       if (ent.layer === 'A-WALL' && !activeLayers['A-WALL']) return;
       if (ent.layer === 'A-ROOM' && !activeLayers['A-ROOM']) return;
@@ -492,8 +511,9 @@ export const CadViewer: React.FC<CadViewerProps> = ({
 
     // 4. Render Defect Overlay Markings & Real CAD Dimension Lines
     if (activeLayers['DEFECTS']) {
-      dataset.defects.forEach(defect => {
-        const { x, y, width, height } = defect.boundingBox;
+      (dataset.defects || []).forEach(defect => {
+        const box = defect.boundingBox || (defect as any).bounds || { x: 450, y: 350, width: 200, height: 100 };
+        const { x, y, width, height } = box;
         const isSelected = defect.id === selectedDefectId;
         const isHovered = defect.id === hoveredDefectId;
 
