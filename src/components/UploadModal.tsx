@@ -4,7 +4,7 @@ import {
   Sparkles, CheckCircle2, ArrowRight, Building2, Warehouse, Activity,
   ShoppingBag, Utensils, Building
 } from 'lucide-react';
-import { BlueprintDataset } from '../types';
+import { BlueprintDataset, CadViewType } from '../types';
 import { INITIAL_DATASETS } from '../data/mockDatasets';
 import { uploadBlueprint, analyzeBlueprintWithAI } from '../services/api';
 import { generateDynamicBlueprintAnalysis } from '../utils/dynamicBlueprintAnalyzer';
@@ -27,6 +27,7 @@ export const UploadModal: React.FC<UploadModalProps> = ({
   const [cadFile, setCadFile] = useState<File | null>(null);
   const [specFile, setSpecFile] = useState<File | null>(null);
   const [projectName, setProjectName] = useState<string>('');
+  const [viewType, setViewType] = useState<CadViewType>('elevation');
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
   const [scanPhase, setScanPhase] = useState<string>('AI OPTICAL SCANNING BLUEPRINT...');
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -36,8 +37,19 @@ export const UploadModal: React.FC<UploadModalProps> = ({
 
   const loadCadFile = async (file: File) => {
     setCadFile(file);
-    if (!projectName) {
-      setProjectName(file.name.replace(/\.[^/.]+$/, ''));
+    const cleanName = file.name.replace(/\.[^/.]+$/, '');
+    setProjectName(cleanName);
+    
+    // Auto-detect view type
+    const lower = file.name.toLowerCase();
+    if (lower.includes('elevation') || lower.includes('facade') || lower.includes('front') || lower.includes('exterior') || lower.includes('shanmukh') || lower.includes('view') || lower.includes('bldg') || lower.includes('building')) {
+      setViewType('elevation');
+    } else if (lower.includes('section') || lower.includes('sec') || lower.includes('cut')) {
+      setViewType('section');
+    } else if (lower.includes('site') || lower.includes('plot') || lower.includes('civil') || lower.includes('parking')) {
+      setViewType('site');
+    } else {
+      setViewType('plan');
     }
     
     // Process any CAD format (DWG thumbnail extraction, DXF parsing, or high-res images)
@@ -79,8 +91,9 @@ export const UploadModal: React.FC<UploadModalProps> = ({
       const base64String = activeProcessed.previewUrl || previewUrl || '';
       const naturalWidth = activeProcessed.naturalWidth || 1400;
       const naturalHeight = activeProcessed.naturalHeight || 900;
+      const finalProjectName = projectName.trim() || cadFile.name.replace(/\.[^/.]+$/, '');
 
-      setScanPhase('AI SPATIAL ANALYSIS: Detecting Structural Bays, Egress Aisles & Corridor Envelopes...');
+      setScanPhase(`AI SPATIAL ANALYSIS: Auditing ${viewType.toUpperCase()} drawing layout & envelope...`);
 
       // Call optical vision backend
       let analyzedDataset: BlueprintDataset | null = null;
@@ -88,10 +101,11 @@ export const UploadModal: React.FC<UploadModalProps> = ({
         analyzedDataset = await analyzeBlueprintWithAI({
           imageBase64: base64String,
           fileName: cadFile.name,
-          projectName,
+          projectName: finalProjectName,
           specFileName: specFile?.name,
           naturalWidth,
-          naturalHeight
+          naturalHeight,
+          viewType
         });
       }
 
@@ -100,12 +114,16 @@ export const UploadModal: React.FC<UploadModalProps> = ({
       // If backend vision returned dataset, use it; otherwise fallback to dynamic analyzer
       const customDataset = analyzedDataset || generateDynamicBlueprintAnalysis(
         cadFile.name,
-        projectName,
+        finalProjectName,
         base64String || undefined,
-        specFile?.name
+        specFile?.name,
+        viewType
       );
 
-      // Ensure customImageUrl and vector cadEntities are preserved
+      // Ensure name, filename, viewType, customImageUrl, and vector cadEntities are preserved
+      customDataset.name = finalProjectName;
+      customDataset.filename = cadFile.name;
+      customDataset.viewType = viewType;
       if (base64String && !customDataset.customImageUrl) {
         customDataset.customImageUrl = base64String;
       }
@@ -121,12 +139,17 @@ export const UploadModal: React.FC<UploadModalProps> = ({
       }, 500);
     } catch (err) {
       console.error('Custom CAD upload error:', err);
+      const finalProjectName = projectName.trim() || cadFile.name.replace(/\.[^/.]+$/, '');
       const fallbackDataset = generateDynamicBlueprintAnalysis(
         cadFile.name,
-        projectName,
+        finalProjectName,
         previewUrl || undefined,
-        specFile?.name
+        specFile?.name,
+        viewType
       );
+      fallbackDataset.name = finalProjectName;
+      fallbackDataset.filename = cadFile.name;
+      fallbackDataset.viewType = viewType;
       setIsProcessing(false);
       onSelectDataset(fallbackDataset);
       onClose();
@@ -249,6 +272,50 @@ export const UploadModal: React.FC<UploadModalProps> = ({
                   onChange={e => setProjectName(e.target.value)}
                   className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-white placeholder-slate-500 font-mono focus:outline-none focus:border-cyan-500"
                 />
+              </div>
+
+              {/* View Type Selector */}
+              <div>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="text-xs font-mono text-slate-300 flex items-center space-x-1.5">
+                    <span>ARCHITECTURAL VIEW TYPE</span>
+                    <span className="text-[10px] text-cyan-400 bg-cyan-950/60 px-1.5 py-0.2 rounded border border-cyan-800/40">
+                      Auto-detected & Customizable
+                    </span>
+                  </label>
+                  <span className="text-[10px] text-slate-400 font-mono">
+                    Audits tailored codes per projection
+                  </span>
+                </div>
+                <div className="grid grid-cols-4 gap-2">
+                  {[
+                    { id: 'elevation', label: 'ELEVATION', icon: '🏛️', desc: 'Facades, Heights & Openings' },
+                    { id: 'plan', label: 'FLOOR PLAN', icon: '📐', desc: 'Rooms, Corridors & Doors' },
+                    { id: 'section', label: 'CROSS SECTION', icon: '🪜', desc: 'Slabs, Stairs & Headroom' },
+                    { id: 'site', label: 'SITE PLAN', icon: '🗺️', desc: 'Setbacks, Roads & ADA' },
+                  ].map(item => (
+                    <button
+                      key={item.id}
+                      type="button"
+                      onClick={() => setViewType(item.id as CadViewType)}
+                      className={`p-2.5 rounded-xl border text-left transition flex flex-col justify-between ${
+                        viewType === item.id
+                          ? 'border-cyan-400 bg-cyan-950/60 text-white shadow-lg shadow-cyan-500/10 ring-1 ring-cyan-400/30'
+                          : 'border-slate-800 bg-slate-950/40 text-slate-400 hover:border-slate-700 hover:text-slate-200'
+                      }`}
+                    >
+                      <div className="flex items-center space-x-1.5 mb-1">
+                        <span className="text-sm">{item.icon}</span>
+                        <span className={`text-[11px] font-bold font-mono ${viewType === item.id ? 'text-cyan-400' : 'text-slate-300'}`}>
+                          {item.label}
+                        </span>
+                      </div>
+                      <span className="text-[10px] text-slate-500 leading-tight">
+                        {item.desc}
+                      </span>
+                    </button>
+                  ))}
+                </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">

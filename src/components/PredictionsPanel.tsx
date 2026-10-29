@@ -4,13 +4,14 @@ import {
   Search, ExternalLink, ShieldAlert, BookOpen, 
   Compass, Volume2, VolumeX, Sparkles, SlidersHorizontal, Check, ArrowRight
 } from 'lucide-react';
-import { BlueprintDataset, DefectAnnotation, DefectSeverity } from '../types';
+import { BlueprintDataset, DefectAnnotation, DefectSeverity, CadViewType } from '../types';
 
 interface PredictionsPanelProps {
   dataset: BlueprintDataset;
   selectedDefectId: string | null;
   onSelectDefect: (defectId: string) => void;
   onResolveDefect: (defectId: string) => void;
+  onChangeViewType?: (viewType: CadViewType) => void;
 }
 
 export const PredictionsPanel: React.FC<PredictionsPanelProps> = ({
@@ -18,6 +19,7 @@ export const PredictionsPanel: React.FC<PredictionsPanelProps> = ({
   selectedDefectId,
   onSelectDefect,
   onResolveDefect,
+  onChangeViewType,
 }) => {
   const [activeTab, setActiveTab] = useState<'defects' | 'specs' | 'storyteller'>('defects');
   const [filterSeverity, setFilterSeverity] = useState<string>('ALL');
@@ -130,6 +132,44 @@ export const PredictionsPanel: React.FC<PredictionsPanelProps> = ({
           <div className="p-1.5 rounded-lg bg-emerald-950/40 border border-emerald-500/30 text-emerald-300">
             <div className="text-sm font-bold text-emerald-400">{resolvedCount}</div>
             <div className="text-[9px] text-emerald-400/80 uppercase">Resolved</div>
+          </div>
+        </div>
+
+        {/* Drawing View Mode Selector */}
+        <div className="mt-3 pt-2.5 border-t border-slate-800/80">
+          <div className="flex items-center justify-between mb-1.5">
+            <span className="text-[10px] font-mono text-slate-400 uppercase tracking-wider flex items-center space-x-1">
+              <span>DRAWING PROJECTION / VIEW MODE</span>
+            </span>
+            <span className="text-[9px] font-mono text-cyan-400 bg-cyan-950/70 px-2 py-0.5 rounded border border-cyan-800/40 font-bold">
+              {(dataset.viewType || 'elevation').toUpperCase()} VIEW
+            </span>
+          </div>
+          <div className="grid grid-cols-4 gap-1.5 font-mono text-[10px]">
+            {[
+              { id: 'elevation', label: 'ELEVATION', icon: '🏛️' },
+              { id: 'plan', label: 'PLAN', icon: '📐' },
+              { id: 'section', label: 'SECTION', icon: '🪜' },
+              { id: 'site', label: 'SITE', icon: '🗺️' },
+            ].map(v => {
+              const isActive = (dataset.viewType || 'elevation') === v.id;
+              return (
+                <button
+                  key={v.id}
+                  type="button"
+                  onClick={() => onChangeViewType && onChangeViewType(v.id as CadViewType)}
+                  className={`py-1.5 px-1.5 rounded-lg border text-center transition flex items-center justify-center space-x-1 ${
+                    isActive
+                      ? 'bg-cyan-500 text-slate-950 font-bold border-cyan-400 shadow-md shadow-cyan-500/20'
+                      : 'bg-slate-900/60 text-slate-400 border-slate-800 hover:border-slate-700 hover:text-slate-200'
+                  }`}
+                  title={`Switch code compliance rules to ${v.label}`}
+                >
+                  <span className="text-xs">{v.icon}</span>
+                  <span className="tracking-tight">{v.label}</span>
+                </button>
+              );
+            })}
           </div>
         </div>
 

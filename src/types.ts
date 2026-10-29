@@ -90,6 +90,8 @@ export interface CadEntity {
   rotation?: number;
 }
 
+export type CadViewType = 'plan' | 'elevation' | 'section' | 'site';
+
 export interface BlueprintDataset {
   id: string;
   name: string;
@@ -105,6 +107,7 @@ export interface BlueprintDataset {
     | 'Custom Upload';
   filename: string;
   fileType: 'dxf' | 'dwg' | 'pdf' | 'img';
+  viewType?: CadViewType;
   dimensions: {
     width: number;
     height: number;

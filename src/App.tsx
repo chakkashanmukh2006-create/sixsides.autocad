@@ -3,12 +3,13 @@ import {
   Building2, Cpu, UploadCloud, Layers, 
   Sparkles, CheckCircle2, ChevronDown, Sliders, ExternalLink, Server
 } from 'lucide-react';
-import { BlueprintDataset } from './types';
+import { BlueprintDataset, CadViewType } from './types';
 import { INITIAL_DATASETS } from './data/mockDatasets';
 import { CadViewer } from './components/CadViewer';
 import { PredictionsPanel } from './components/PredictionsPanel';
 import { TrainingStudio } from './components/TrainingStudio';
 import { UploadModal } from './components/UploadModal';
+import { generateDynamicBlueprintAnalysis } from './utils/dynamicBlueprintAnalyzer';
 import { 
   getBackendHealth, 
   getDatasets, 
@@ -103,11 +104,42 @@ export const App: React.FC = () => {
   };
 
   const handleSelectDataset = (newDataset: BlueprintDataset) => {
-    // If it's a new custom dataset, add it to list
-    if (!datasets.some(d => d.id === newDataset.id)) {
-      setDatasets(prev => [newDataset, ...prev]);
-    }
+    // If it's a new custom dataset, add it to list or update existing
+    setDatasets(prev => {
+      const idx = prev.findIndex(d => d.id === newDataset.id);
+      if (idx >= 0) {
+        const copy = [...prev];
+        copy[idx] = newDataset;
+        return copy;
+      }
+      return [newDataset, ...prev];
+    });
     setCurrentDatasetId(newDataset.id);
+    setSelectedDefectId(null);
+  };
+
+  const handleChangeViewType = (newViewType: CadViewType) => {
+    if (!currentDataset) return;
+
+    const updated = generateDynamicBlueprintAnalysis(
+      currentDataset.filename || currentDataset.name,
+      currentDataset.name,
+      currentDataset.customImageUrl,
+      currentDataset.specDocument?.title,
+      newViewType
+    );
+
+    updated.id = currentDataset.id;
+    updated.name = currentDataset.name;
+    updated.filename = currentDataset.filename;
+    updated.customImageUrl = currentDataset.customImageUrl;
+    if (currentDataset.cadEntities && currentDataset.cadEntities.length > 0) {
+      updated.cadEntities = currentDataset.cadEntities;
+    }
+    updated.fileType = currentDataset.fileType;
+    updated.viewType = newViewType;
+
+    setDatasets(prev => prev.map(d => d.id === currentDataset.id ? updated : d));
     setSelectedDefectId(null);
   };
 
@@ -237,6 +269,7 @@ export const App: React.FC = () => {
                 selectedDefectId={selectedDefectId}
                 onSelectDefect={handleSelectDefect}
                 onResolveDefect={handleResolveDefect}
+                onChangeViewType={handleChangeViewType}
               />
             </section>
           </div>

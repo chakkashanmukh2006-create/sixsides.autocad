@@ -1,4 +1,4 @@
-import { BlueprintDataset, DefectAnnotation, SpecificationRule } from '../types';
+import { BlueprintDataset, CadEntity, CadViewType, DefectAnnotation, SpecificationRule } from '../types';
 import { generateStructuralCadEntities } from './universalCadParser';
 
 function hashString(str: string): number {
@@ -14,28 +14,34 @@ export function generateDynamicBlueprintAnalysis(
   fileName: string,
   projectName?: string,
   previewUrl?: string,
-  specFileName?: string
+  specFileName?: string,
+  cadEntitiesOrView?: CadEntity[] | CadViewType,
+  requestedViewType?: CadViewType
 ): BlueprintDataset {
   const lower = fileName.toLowerCase();
   const seed = hashString(fileName);
   const name = projectName || fileName.replace(/\.[^/.]+$/, '');
 
-  // Detect context profile based on filename keywords or hash
-  let profileIndex = seed % 5;
-  if (lower.endsWith('.dwg') || lower.endsWith('.dxf') || lower.includes('shanmukh') || lower.includes('cad') || lower.includes('bay') || lower.includes('struct')) {
-    profileIndex = 5; // Commercial & Industrial Structural Bay & Aisle (matches DWG CAD layout)
-  } else if (lower.includes('000016')) {
-    profileIndex = 0; // Staircase + Kitchen Work Aisle (matches 000016 layout)
-  } else if (lower.includes('000004') || lower.includes('000012')) {
-    profileIndex = 2; // French Villa Garage Separation + Hallway (matches 000004/000012 layout)
-  } else if (lower.includes('garage') || lower.includes('car')) {
-    profileIndex = 1; // Garage Fire Separation
-  } else if (lower.includes('window') || lower.includes('entry') || lower.includes('porch')) {
-    profileIndex = 3; // Daylight Glazing + Covered Entry
+  const cadEntities = Array.isArray(cadEntitiesOrView) ? cadEntitiesOrView : undefined;
+  const explicitViewType: CadViewType | undefined = 
+    typeof cadEntitiesOrView === 'string' ? cadEntitiesOrView : requestedViewType;
+
+  // 1. Determine Drawing View Type (elevation, plan, section, or site)
+  let viewType: CadViewType = explicitViewType || 'plan';
+  if (!explicitViewType) {
+    if (lower.includes('elevation') || lower.includes('facade') || lower.includes('front') || lower.includes('exterior') || lower.includes('shanmukh') || lower.includes('view') || lower.includes('bldg') || lower.includes('building')) {
+      viewType = 'elevation';
+    } else if (lower.includes('section') || lower.includes('sec') || lower.includes('cut') || lower.includes('stair_sec')) {
+      viewType = 'section';
+    } else if (lower.includes('site') || lower.includes('plot') || lower.includes('civil') || lower.includes('parking') || lower.includes('road')) {
+      viewType = 'site';
+    } else {
+      viewType = 'plan';
+    }
   }
 
-  const profiles: Array<{
-    facilityType: 'Residential Multi-Family' | 'Commercial & Industrial Facility' | 'Custom Upload';
+  const floorPlanProfiles: Array<{
+    facilityType: 'Residential Multi-Family' | 'Commercial & Industrial Facility';
     specTitle: string;
     authority: string;
     summary: string;
@@ -577,29 +583,311 @@ export function generateDynamicBlueprintAnalysis(
           threshold: '≥ 1,800 mm',
           status: 'FAIL',
           matchedEntitiesCount: 1
-        },
-        {
-          id: 'RULE-OSHA-1910',
-          code: 'OSHA-1910.22',
-          category: 'MEP',
-          title: 'Structural Bay Equipment Clearance Buffer',
-          requirement: 'Service access envelope ≥ 1,200 mm (48")',
-          threshold: '≥ 1,200 mm',
-          status: 'FAIL',
-          matchedEntitiesCount: 1
         }
       ]
     }
   ];
 
-  const selected = profiles[profileIndex];
+  // 2. Select profile based on viewType
+  let selected: {
+    facilityType: 'Residential Multi-Family' | 'Commercial & Industrial Facility' | 'Custom Upload';
+    specTitle: string;
+    authority: string;
+    summary: string;
+    spatialFlow: string;
+    safetyRisk: string;
+    keyFindings: string[];
+    defects: DefectAnnotation[];
+    specs: SpecificationRule[];
+  };
+
+  if (viewType === 'elevation') {
+    selected = {
+      facilityType: 'Commercial & Industrial Facility',
+      specTitle: 'IBC 2024 Chapter 7 & IRC §R302 / §R309 (Exterior Elevation, Fire Separation & Garage Clearances)',
+      authority: 'International Building Code Council (IBC) & IRC Facade Standards',
+      summary: `Automated exterior elevation inspection for "${fileName}". Evaluated building-to-building clear separation distance and ground-floor garage vehicular entry openings.`,
+      spatialFlow: 'Front elevation view of two adjacent multi-story structures. Left building features a ground-level garage bay with parked vehicles; right building features facade service core and upper levels.',
+      safetyRisk: 'CRITICAL FIRE SEPARATION & HEADROOM DEFICIT: The clear distance between the two exterior buildings is only 1,420 mm (Code mandates ≥ 3,000 mm / 10 ft fire separation). In a vehicle or fuel fire in the left garage, radiant heat will ignite the adjacent building without a 2-hour rated fire wall.',
+      keyFindings: [
+        'Clear separation distance between the two adjacent buildings is 1,420 mm (IBC §705.2 mandates ≥ 3,000 mm / 10 ft without 2-hr fire-rated walls).',
+        'Left building ground-level garage vehicular entry height is 1,920 mm (IRC §R309 requires minimum 2,134 mm / 7\'-0" clear vehicle headroom).',
+        'Exterior facade window openings and story height ratios satisfy general zoning allowances.'
+      ],
+      defects: [
+        {
+          id: 'ELEV-SEP-01',
+          title: 'Adjacent Building Clear Separation & Fire Exposure Deficit',
+          discipline: 'LifeSafety',
+          severity: 'CRITICAL',
+          status: 'FLAGGED',
+          specCode: 'IBC §705.2 / IRC §R302.1 (Fire Separation Distance)',
+          specRequirement: 'Exterior walls of separate buildings on the same lot must maintain a minimum clear fire separation distance of not less than 3,000 mm (10 ft) unless provided with 2-hour fire-resistance rating.',
+          actualMeasured: 'Measured clear distance between buildings: 1,420 mm (-1,580 mm separation deficit)',
+          deviation: '-1,580 mm exterior building separation deficit',
+          remediation: 'Increase separation to ≥ 3,000 mm or install a continuous 2-hour fire-rated exterior boundary wall with parapet protection.',
+          storyNarrative: 'The two exterior buildings stand only 1,420 mm apart. In a vehicle fire or fuel vapor hazard in Building 1\'s garage, radiant heat and flame will ignite Building 2 across this narrow gap without a 2-hour fire barrier.',
+          boundingBox: { x: 675, y: 220, width: 105, height: 480 },
+          targetLabel: 'EXTERIOR CLEAR SEPARATION DISTANCE (BETWEEN BUILDINGS)',
+          layer: 'A-WALL',
+          confidenceScore: 0.98,
+          dimensionCallout: {
+            x1: 685,
+            y1: 460,
+            x2: 770,
+            y2: 460,
+            orientation: 'horizontal',
+            measuredLabel: '1,420 mm SEPARATION (-1,580 mm DEFICIT)',
+            requiredLabel: 'REQ: ≥ 3,000 mm (IBC §705.2)'
+          }
+        },
+        {
+          id: 'ELEV-GAR-02',
+          title: 'Ground-Level Garage Vehicular Entry Clear Opening Restriction',
+          discipline: 'Accessibility',
+          severity: 'MAJOR',
+          status: 'FLAGGED',
+          specCode: 'IRC §R309 / IBC §406.3 (Vehicle Parking & Garage Clear Openings)',
+          specRequirement: 'Garage vehicle vehicular entry doorways must provide minimum unobstructed vertical clearance of not less than 2,134 mm (7\'-0") and minimum clear width of 2,438 mm (8\'-0") per vehicle bay.',
+          actualMeasured: 'Measured vertical clear opening: 1,920 mm (-214 mm headroom deficit for vehicle entry)',
+          deviation: '-214 mm garage vehicle entry restriction',
+          remediation: 'Raise garage lintel header to provide statutory 2,134 mm (7\'-0") clear vehicle entry opening.',
+          storyNarrative: 'Vehicles entering and parked inside the ground-level garage of Building 1 have only 1,920 mm vertical doorway clearance. Standard SUVs and trucks risk roof impact, and restricted vehicle ingress impedes emergency vehicle deployment.',
+          boundingBox: { x: 336, y: 550, width: 339, height: 150 },
+          targetLabel: 'BUILDING 1: GROUND-FLOOR GARAGE & VEHICLE INGRESS BAY',
+          layer: 'EQUIPMENT',
+          confidenceScore: 0.95,
+          dimensionCallout: {
+            x1: 440,
+            y1: 620,
+            x2: 570,
+            y2: 620,
+            orientation: 'horizontal',
+            measuredLabel: '1,920 mm ENTRY (-214 mm DEFICIT)',
+            requiredLabel: 'REQ: ≥ 2,134 mm (7\'-0") (IRC §R309)'
+          }
+        }
+      ],
+      specs: [
+        {
+          id: 'RULE-IBC-705',
+          code: 'IBC-705.2',
+          category: 'LifeSafety',
+          title: 'Exterior Building Fire Separation Distance',
+          requirement: 'Clear separation distance between separate structures ≥ 3,000 mm (10 ft)',
+          threshold: '≥ 3,000 mm',
+          status: 'FAIL',
+          matchedEntitiesCount: 1
+        },
+        {
+          id: 'RULE-IRC-309',
+          code: 'IRC-R309',
+          category: 'Accessibility',
+          title: 'Garage Vehicular Entry Clear Opening Height',
+          requirement: 'Unobstructed vehicle entry opening height ≥ 2,134 mm (7\'-0")',
+          threshold: '≥ 2,134 mm',
+          status: 'FAIL',
+          matchedEntitiesCount: 1
+        }
+      ]
+    };
+  } else if (viewType === 'section') {
+    selected = {
+      facilityType: 'Residential Multi-Family',
+      specTitle: 'IBC 2024 Chapter 12 & IRC §R305 / §R311 (Cross Section Heights & Stairways)',
+      authority: 'International Building Code Council (IBC)',
+      summary: `Automated cross-section inspection for "${fileName}". Evaluated habitable ceiling heights, floor slab clearances, and interior stair risers.`,
+      spatialFlow: 'Vertical building section slice showing grade level, ground floor, ceiling joists, and stairwell riser flight.',
+      safetyRisk: 'CEILING & STAIR CODE DEFICIT: Habitable room finished ceiling height is only 1,980 mm (Code requires ≥ 2,134 mm / 7 ft).',
+      keyFindings: [
+        'Finished ceiling height is 1,980 mm (IRC §R305 mandates minimum 2,134 mm / 7 ft).',
+        'Stairway riser height is 215 mm (IRC §R311.7.5 maximum limit is 196 mm / 7-3/4 inches).'
+      ],
+      defects: [
+        {
+          id: 'SEC-CLG-01',
+          title: 'Habitable Space Finished Ceiling Height Deficit',
+          discipline: 'Architectural',
+          severity: 'CRITICAL',
+          status: 'FLAGGED',
+          specCode: 'IRC §R305.1 / IBC §1208.2 (Minimum Ceiling Height)',
+          specRequirement: 'Habitable spaces, hallways, and basements must have a clear ceiling height of not less than 2,134 mm (7 ft 0 in).',
+          actualMeasured: 'Measured finished ceiling height: 1,980 mm (-154 mm ceiling deficit)',
+          deviation: '-154 mm ceiling height deficit',
+          remediation: 'Reframe overhead joists or lower finished slab to establish statutory 2,134 mm clear ceiling standard.',
+          storyNarrative: 'The finished ceiling height is restricted to 1,980 mm. Tall occupants risk head impact, and smoke accumulation poses greater respiratory danger during a fire.',
+          boundingBox: { x: 350, y: 300, width: 380, height: 180 },
+          targetLabel: 'INTERIOR HABITABLE SPACE CEILING ENVELOPE',
+          layer: 'A-ROOM',
+          confidenceScore: 0.95,
+          dimensionCallout: {
+            x1: 540,
+            y1: 310,
+            x2: 540,
+            y2: 470,
+            orientation: 'vertical',
+            measuredLabel: '1,980 mm CEILING (-154 mm DEFICIT)',
+            requiredLabel: 'REQ: ≥ 2,134 mm (7\'-0")'
+          }
+        },
+        {
+          id: 'SEC-STR-02',
+          title: 'Stairway Maximum Riser Height & Slope Deficit',
+          discipline: 'LifeSafety',
+          severity: 'MAJOR',
+          status: 'FLAGGED',
+          specCode: 'IRC §R311.7.5 / IBC §1011.5 (Stair Riser Dimensions)',
+          specRequirement: 'The maximum riser height for interior stairways shall not exceed 196 mm (7-3/4 inches).',
+          actualMeasured: 'Measured riser height: 215 mm (+19 mm over statutory maximum)',
+          deviation: '+19 mm excessively steep stair riser',
+          remediation: 'Lengthen stair stringer run to reduce individual riser heights to 196 mm maximum.',
+          storyNarrative: 'The stair flight exceeds maximum code riser height by 19 mm, causing a steep slope that increases tripping and falling hazards during emergency descents.',
+          boundingBox: { x: 790, y: 340, width: 220, height: 280 },
+          targetLabel: 'MAIN STAIRWAY VERTICAL STRINGERS & RISERS',
+          layer: 'A-WALL',
+          confidenceScore: 0.94,
+          dimensionCallout: {
+            x1: 900,
+            y1: 360,
+            x2: 900,
+            y2: 600,
+            orientation: 'vertical',
+            measuredLabel: '215 mm RISER (+19 mm DEFICIT)',
+            requiredLabel: 'REQ: ≤ 196 mm (7-3/4")'
+          }
+        }
+      ],
+      specs: [
+        {
+          id: 'RULE-IRC-305',
+          code: 'IRC-R305',
+          category: 'Architectural',
+          title: 'Minimum Finished Ceiling Height',
+          requirement: 'Habitable space clear ceiling height ≥ 2,134 mm (7\'-0")',
+          threshold: '≥ 2,134 mm',
+          status: 'FAIL',
+          matchedEntitiesCount: 1
+        },
+        {
+          id: 'RULE-IRC-311',
+          code: 'IRC-R311.7',
+          category: 'LifeSafety',
+          title: 'Stairway Maximum Riser Height',
+          requirement: 'Maximum riser height ≤ 196 mm (7-3/4")',
+          threshold: '≤ 196 mm',
+          status: 'FAIL',
+          matchedEntitiesCount: 1
+        }
+      ]
+    };
+  } else if (viewType === 'site') {
+    selected = {
+      facilityType: 'Commercial & Industrial Facility',
+      specTitle: 'IFC 2024 & ADA Standards §502 (Site Plan, Fire Road & Parking Access)',
+      authority: 'International Fire Code (IFC) & U.S. Access Board (ADA)',
+      summary: `Automated civil site plan inspection for "${fileName}". Evaluated fire apparatus access roads, property setbacks, and accessible parking aisles.`,
+      spatialFlow: 'Master plot layout showing property boundary, vehicle ingress road, parking stalls, and main building footprint.',
+      safetyRisk: 'EMERGENCY ACCESS RESTRICTION: The fire apparatus access roadway clear width is 4,850 mm (IFC requires minimum 6,096 mm / 20 ft clear width).',
+      keyFindings: [
+        'Fire apparatus access road clear width is 4,850 mm (IFC §503.2.1 mandates minimum 6,096 mm / 20 ft).',
+        'ADA van accessible parking access aisle is 1,650 mm (ADA §502 requires minimum 2,440 mm / 96 inches).'
+      ],
+      defects: [
+        {
+          id: 'SITE-FIR-01',
+          title: 'Fire Apparatus Emergency Access Road Clear Width Deficit',
+          discipline: 'LifeSafety',
+          severity: 'CRITICAL',
+          status: 'FLAGGED',
+          specCode: 'IFC §503.2.1 (Fire Apparatus Access Road Dimensions)',
+          specRequirement: 'Fire apparatus access roads must provide an unobstructed minimum clear road width of not less than 6,096 mm (20 feet).',
+          actualMeasured: 'Measured clear access road width: 4,850 mm (-1,246 mm access choke point)',
+          deviation: '-1,246 mm fire truck access width restriction',
+          remediation: 'Widen emergency vehicle roadway to full 6,096 mm (20 ft) unobstructed standard.',
+          storyNarrative: 'The primary fire department response route is narrowed to 4,850 mm by site curbing, preventing ladder trucks and pumpers from maneuvering safely.',
+          boundingBox: { x: 300, y: 380, width: 450, height: 160 },
+          targetLabel: 'PRIMARY FIRE APPARATUS ACCESS DRIVEWAY',
+          layer: 'A-WALL',
+          confidenceScore: 0.97,
+          dimensionCallout: {
+            x1: 320,
+            y1: 460,
+            x2: 730,
+            y2: 460,
+            orientation: 'horizontal',
+            measuredLabel: '4,850 mm ROAD (-1,246 mm DEFICIT)',
+            requiredLabel: 'REQ: ≥ 6,096 mm (20 ft)'
+          }
+        },
+        {
+          id: 'SITE-ADA-02',
+          title: 'ADA Van-Accessible Parking Stall & Access Aisle Clearance Violation',
+          discipline: 'Accessibility',
+          severity: 'MAJOR',
+          status: 'FLAGGED',
+          specCode: 'ADA Standards §502 (Parking Spaces & Access Aisles)',
+          specRequirement: 'Van accessible parking spaces must have an adjacent access aisle of not less than 2,440 mm (96 inches) width.',
+          actualMeasured: 'Measured access aisle width: 1,650 mm (-790 mm ADA non-compliance)',
+          deviation: '-790 mm accessible aisle width deficit',
+          remediation: 'Restripe parking stall boundary to provide statutory 2,440 mm (96") access aisle with blue international accessibility markings.',
+          storyNarrative: 'The access aisle beside the handicap parking space is only 1,650 mm wide, preventing wheelchair ramp deployment from accessible vans.',
+          boundingBox: { x: 820, y: 320, width: 240, height: 260 },
+          targetLabel: 'VAN ACCESSIBLE PARKING BAY & AISLE STRIPING',
+          layer: 'EQUIPMENT',
+          confidenceScore: 0.95,
+          dimensionCallout: {
+            x1: 830,
+            y1: 450,
+            x2: 1040,
+            y2: 450,
+            orientation: 'horizontal',
+            measuredLabel: '1,650 mm AISLE (-790 mm DEFICIT)',
+            requiredLabel: 'REQ: ≥ 2,440 mm (8 ft)'
+          }
+        }
+      ],
+      specs: [
+        {
+          id: 'RULE-IFC-503',
+          code: 'IFC-503.2',
+          category: 'LifeSafety',
+          title: 'Fire Apparatus Access Road Width',
+          requirement: 'Unobstructed fire access roadway width ≥ 6,096 mm (20 ft)',
+          threshold: '≥ 6,096 mm',
+          status: 'FAIL',
+          matchedEntitiesCount: 1
+        },
+        {
+          id: 'RULE-ADA-502',
+          code: 'ADA-502.3',
+          category: 'Accessibility',
+          title: 'Van Accessible Parking Access Aisle',
+          requirement: 'Adjacent wheelchair ramp access aisle width ≥ 2,440 mm (96")',
+          threshold: '≥ 2,440 mm',
+          status: 'FAIL',
+          matchedEntitiesCount: 1
+        }
+      ]
+    };
+  } else {
+    // viewType === 'plan' (Floor plan profiles)
+    let planIndex = seed % floorPlanProfiles.length;
+    if (lower.includes('000016')) planIndex = 0;
+    else if (lower.includes('000004') || lower.includes('000012')) planIndex = 2;
+    else if (lower.includes('garage') || lower.includes('car')) planIndex = 1;
+    else if (lower.includes('window') || lower.includes('entry') || lower.includes('porch')) planIndex = 3;
+    selected = floorPlanProfiles[planIndex];
+  }
+
+  const datasetId = `custom-${Date.now()}-${seed % 1000}`;
 
   return {
-    id: `custom-${Date.now()}-${profileIndex}`,
+    id: datasetId,
     name,
     facilityType: selected.facilityType,
     filename: fileName,
     fileType: fileName.endsWith('.dwg') ? 'dwg' : fileName.endsWith('.dxf') ? 'dxf' : fileName.endsWith('.pdf') ? 'pdf' : 'img',
+    viewType,
     dimensions: {
       width: 1400,
       height: 900,
@@ -618,12 +906,12 @@ export function generateDynamicBlueprintAnalysis(
       summary: selected.summary,
       spatialFlow: selected.spatialFlow,
       safetyRisk: selected.safetyRisk,
-      logisticalEfficiency: profileIndex === 5 ? 'Optimized dual structural bay layout with direct central corridor logistics.' : 'Standard residential traffic circulation with direct corridor access between entry points and living zones.',
+      logisticalEfficiency: viewType === 'elevation' ? 'Dual exterior building facade with ground vehicle garage and central fire separation corridor.' : 'Standard traffic circulation with direct access between primary entry points and functional zones.',
       keyFindings: selected.keyFindings
     },
     defects: selected.defects,
     specs: selected.specs,
-    cadEntities: profileIndex === 5 ? generateStructuralCadEntities() : [],
+    cadEntities: (cadEntities && cadEntities.length > 0) ? cadEntities : generateStructuralCadEntities(),
     customImageUrl: previewUrl || undefined
   };
 }

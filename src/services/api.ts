@@ -1,4 +1,4 @@
-import { BlueprintDataset, TrainingSample } from '../types';
+import { BlueprintDataset, CadViewType, TrainingSample } from '../types';
 import { INITIAL_DATASETS, INITIAL_TRAINING_SAMPLES } from '../data/mockDatasets';
 
 const API_BASE = '/api';
@@ -95,6 +95,7 @@ export async function analyzeBlueprintWithAI(payload: {
   specFileName?: string;
   naturalWidth?: number;
   naturalHeight?: number;
+  viewType?: CadViewType;
 }): Promise<BlueprintDataset | null> {
   try {
     const res = await fetch(`${API_BASE}/analyze/blueprint`, {

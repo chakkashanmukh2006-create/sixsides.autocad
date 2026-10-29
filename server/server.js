@@ -76,7 +76,7 @@ app.patch('/api/datasets/:id/defects/:defectId', (req, res) => {
 // 4b. AI Optical Computer Vision Blueprint Analysis
 app.post('/api/analyze/blueprint', async (req, res) => {
   try {
-    const { imageBase64, fileName, projectName, specFileName, naturalWidth, naturalHeight } = req.body;
+    const { imageBase64, fileName, projectName, specFileName, naturalWidth, naturalHeight, viewType } = req.body;
     if (!imageBase64) {
       return res.status(400).json({ success: false, message: 'Image data is required' });
     }
@@ -91,7 +91,8 @@ app.post('/api/analyze/blueprint', async (req, res) => {
       projectName,
       specFileName,
       naturalWidth: Number(naturalWidth) || 1400,
-      naturalHeight: Number(naturalHeight) || 900
+      naturalHeight: Number(naturalHeight) || 900,
+      viewType
     });
 
     dataset.customImageUrl = imageBase64;
