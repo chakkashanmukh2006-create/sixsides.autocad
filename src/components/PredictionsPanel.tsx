@@ -138,11 +138,12 @@ export const PredictionsPanel: React.FC<PredictionsPanelProps> = ({
         {/* Drawing View Mode Selector */}
         <div className="mt-3 pt-2.5 border-t border-slate-800/80">
           <div className="flex items-center justify-between mb-1.5">
-            <span className="text-[10px] font-mono text-slate-400 uppercase tracking-wider flex items-center space-x-1">
-              <span>DRAWING PROJECTION / VIEW MODE</span>
+            <span className="text-[10px] font-mono text-slate-400 uppercase tracking-wider flex items-center space-x-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+              <span>AUTO-DETECTED VIEW TYPE</span>
             </span>
-            <span className="text-[9px] font-mono text-cyan-400 bg-cyan-950/70 px-2 py-0.5 rounded border border-cyan-800/40 font-bold">
-              {(dataset.viewType || 'elevation').toUpperCase()} VIEW
+            <span className="text-[9px] font-mono text-cyan-400 bg-cyan-950/70 px-2 py-0.5 rounded border border-cyan-800/40 font-bold flex items-center space-x-1">
+              <span>{(dataset.viewType || 'elevation').toUpperCase()} VIEW</span>
             </span>
           </div>
           <div className="grid grid-cols-4 gap-1.5 font-mono text-[10px]">
@@ -163,13 +164,24 @@ export const PredictionsPanel: React.FC<PredictionsPanelProps> = ({
                       ? 'bg-cyan-500 text-slate-950 font-bold border-cyan-400 shadow-md shadow-cyan-500/20'
                       : 'bg-slate-900/60 text-slate-400 border-slate-800 hover:border-slate-700 hover:text-slate-200'
                   }`}
-                  title={`Switch code compliance rules to ${v.label}`}
+                  title={`Switch inspection code audit to ${v.label}`}
                 >
                   <span className="text-xs">{v.icon}</span>
                   <span className="tracking-tight">{v.label}</span>
                 </button>
               );
             })}
+          </div>
+          <div className="mt-1.5 text-[9px] font-mono text-slate-400 flex items-center justify-between">
+            <span>
+              {dataset.viewType === 'elevation'
+                ? 'Auditing: Facade separation (IBC §705) & garage headroom (IRC §R309)'
+                : dataset.viewType === 'section'
+                ? 'Auditing: Finished ceiling height (IRC §R305) & stair risers (IRC §R311)'
+                : dataset.viewType === 'site'
+                ? 'Auditing: Fire apparatus roads (IFC §503) & ADA parking aisles (ADA §502)'
+                : 'Auditing: Corridors (IBC §1020), room egress & door swings (IRC §R310)'}
+            </span>
           </div>
         </div>
 
