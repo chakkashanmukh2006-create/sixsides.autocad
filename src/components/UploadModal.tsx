@@ -34,30 +34,37 @@ export const UploadModal: React.FC<UploadModalProps> = ({
 
   if (!isOpen) return null;
 
+  const loadCadFile = async (file: File) => {
+    setCadFile(file);
+    if (!projectName) {
+      setProjectName(file.name.replace(/\.[^/.]+$/, ''));
+    }
+    
+    // Process any CAD format (DWG thumbnail extraction, DXF parsing, or high-res images)
+    try {
+      const processed = await processUniversalCadFile(file);
+      setProcessedCad(processed);
+      if (processed.previewUrl) {
+        setPreviewUrl(processed.previewUrl);
+      }
+    } catch (err) {
+      console.warn('CAD file preview extraction notice:', err);
+    }
+  };
+
   const handleCadFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      setCadFile(file);
-      if (!projectName) {
-        setProjectName(file.name.replace(/\.[^/.]+$/, ''));
-      }
-      
-      // Process any CAD format (DWG thumbnail extraction, DXF parsing, or high-res images)
-      try {
-        const processed = await processUniversalCadFile(file);
-        setProcessedCad(processed);
-        if (processed.previewUrl) {
-          setPreviewUrl(processed.previewUrl);
-        }
-      } catch (err) {
-        console.warn('CAD file preview extraction notice:', err);
-      }
+      await loadCadFile(e.target.files[0]);
     }
+  };
+
+  const loadSpecFile = (file: File) => {
+    setSpecFile(file);
   };
 
   const handleSpecFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
-      setSpecFile(e.target.files[0]);
+      loadSpecFile(e.target.files[0]);
     }
   };
 
@@ -246,7 +253,17 @@ export const UploadModal: React.FC<UploadModalProps> = ({
 
               <div className="grid grid-cols-2 gap-4">
                 {/* Dropzone 1: CAD Blueprint */}
-                <div className="p-4 rounded-xl border-2 border-dashed border-slate-800 hover:border-cyan-500/50 bg-slate-950/40 text-center transition flex flex-col items-center justify-center relative">
+                <div 
+                  onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+                      loadCadFile(e.dataTransfer.files[0]);
+                    }
+                  }}
+                  className="p-4 rounded-xl border-2 border-dashed border-slate-800 hover:border-cyan-500/50 bg-slate-950/40 text-center transition flex flex-col items-center justify-center relative"
+                >
                   <input
                     type="file"
                     accept=".dxf,.dwg,.pdf,.png,.jpg,.jpeg,.svg"
@@ -276,7 +293,17 @@ export const UploadModal: React.FC<UploadModalProps> = ({
                 </div>
 
                 {/* Dropzone 2: Specification Document */}
-                <div className="p-4 rounded-xl border-2 border-dashed border-slate-800 hover:border-cyan-500/50 bg-slate-950/40 text-center transition flex flex-col items-center justify-center relative">
+                <div 
+                  onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+                      loadSpecFile(e.dataTransfer.files[0]);
+                    }
+                  }}
+                  className="p-4 rounded-xl border-2 border-dashed border-slate-800 hover:border-cyan-500/50 bg-slate-950/40 text-center transition flex flex-col items-center justify-center relative"
+                >
                   <input
                     type="file"
                     accept=".pdf,.docx,.txt,.md,.json"

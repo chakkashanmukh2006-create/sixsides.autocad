@@ -293,7 +293,9 @@ export const CadViewer: React.FC<CadViewerProps> = ({
 
     // 2. Draw Custom Uploaded Blueprint Image (if any)
     if (loadedImage) {
+      ctx.imageSmoothingEnabled = false;
       ctx.drawImage(loadedImage, 100, 80, dataset.dimensions.width - 200, dataset.dimensions.height - 160);
+      ctx.imageSmoothingEnabled = true;
     }
 
     // 3. Render CAD Vector Entities

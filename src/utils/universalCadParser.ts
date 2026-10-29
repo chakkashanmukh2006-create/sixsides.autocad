@@ -84,15 +84,16 @@ export async function extractDwgThumbnail(file: File | ArrayBuffer): Promise<{ d
 }
 
 /**
- * Renders an extracted thumbnail onto a high-resolution dark blueprint canvas with engineering grid
+ * Renders an extracted thumbnail onto a high-resolution dark blueprint canvas with engineering grid.
+ * Auto-crops empty dark borders so the drawing fills the drafting sheet crisply.
  */
 async function renderCrispCadSheet(imgUrl: string): Promise<{ dataUrl: string; width: number; height: number }> {
   return new Promise((resolve) => {
     const img = new Image();
     img.onload = () => {
-      const canvas = document.createElement('canvas');
       const width = 1200;
       const height = 740;
+      const canvas = document.createElement('canvas');
       canvas.width = width;
       canvas.height = height;
       const ctx = canvas.getContext('2d');
@@ -122,20 +123,69 @@ async function renderCrispCadSheet(imgUrl: string): Promise<{ dataUrl: string; w
         ctx.stroke();
       }
 
-      // 3. Draw DWG linework with nearest-neighbor for razor-sharp vector pixels
+      // 3. Find non-background content bounding box in raw thumbnail
+      let cropX = 0;
+      let cropY = 0;
+      let cropW = img.naturalWidth;
+      let cropH = img.naturalHeight;
+
+      try {
+        const tempCanvas = document.createElement('canvas');
+        tempCanvas.width = img.naturalWidth;
+        tempCanvas.height = img.naturalHeight;
+        const tempCtx = tempCanvas.getContext('2d');
+        if (tempCtx) {
+          tempCtx.drawImage(img, 0, 0);
+          const imgData = tempCtx.getImageData(0, 0, img.naturalWidth, img.naturalHeight);
+          const data = imgData.data;
+          const bgR = data[0];
+          const bgG = data[1];
+          const bgB = data[2];
+
+          let minX = img.naturalWidth;
+          let maxX = 0;
+          let minY = img.naturalHeight;
+          let maxY = 0;
+
+          for (let y = 0; y < img.naturalHeight; y++) {
+            for (let x = 0; x < img.naturalWidth; x++) {
+              const idx = (y * img.naturalWidth + x) * 4;
+              const diff = Math.abs(data[idx] - bgR) + Math.abs(data[idx + 1] - bgG) + Math.abs(data[idx + 2] - bgB);
+              if (diff > 25) {
+                if (x < minX) minX = x;
+                if (x > maxX) maxX = x;
+                if (y < minY) minY = y;
+                if (y > maxY) maxY = y;
+              }
+            }
+          }
+
+          if (maxX > minX && maxY > minY) {
+            const pad = 3;
+            cropX = Math.max(0, minX - pad);
+            cropY = Math.max(0, minY - pad);
+            cropW = Math.min(img.naturalWidth - cropX, (maxX - minX) + pad * 2);
+            cropH = Math.min(img.naturalHeight - cropY, (maxY - minY) + pad * 2);
+          }
+        }
+      } catch (err) {
+        console.warn('Auto-crop scan notice:', err);
+      }
+
+      // 4. Draw cropped DWG linework with nearest-neighbor for razor-sharp vector pixels
       ctx.imageSmoothingEnabled = false;
 
-      const imgAspect = img.naturalWidth / img.naturalHeight;
-      let drawW = width * 0.82;
-      let drawH = drawW / imgAspect;
+      const cropAspect = cropW / cropH;
+      let drawW = width * 0.84;
+      let drawH = drawW / cropAspect;
       if (drawH > height * 0.88) {
         drawH = height * 0.88;
-        drawW = drawH * imgAspect;
+        drawW = drawH * cropAspect;
       }
       const drawX = (width - drawW) / 2;
       const drawY = (height - drawH) / 2;
 
-      ctx.drawImage(img, drawX, drawY, drawW, drawH);
+      ctx.drawImage(img, cropX, cropY, cropW, cropH, drawX, drawY, drawW, drawH);
 
       resolve({
         dataUrl: canvas.toDataURL('image/png'),
@@ -158,47 +208,47 @@ export function generateStructuralCadEntities(): CadEntity[] {
 
   // Left Structural Bay Walls (A-WALL)
   entities.push(
-    { id: 'w-bay1-top', type: 'wall', x: 545, y: 290, x2: 715, y2: 290, layer: 'A-WALL' },
-    { id: 'w-bay1-bot', type: 'wall', x: 545, y: 545, x2: 715, y2: 545, layer: 'A-WALL' },
-    { id: 'w-bay1-left', type: 'wall', x: 545, y: 290, x2: 545, y2: 545, layer: 'A-WALL' },
-    { id: 'w-bay1-right', type: 'wall', x: 715, y: 290, x2: 715, y2: 545, layer: 'A-WALL' },
-    // Bay 1 dividers
-    { id: 'w-bay1-d1', type: 'wall', x: 545, y: 354, x2: 715, y2: 354, layer: 'A-WALL' },
-    { id: 'w-bay1-d2', type: 'wall', x: 545, y: 418, x2: 715, y2: 418, layer: 'A-WALL' },
-    { id: 'w-bay1-d3', type: 'wall', x: 545, y: 482, x2: 715, y2: 482, layer: 'A-WALL' }
+    { id: 'w-bay1-top', type: 'wall', x: 336, y: 220, x2: 675, y2: 220, layer: 'A-WALL' },
+    { id: 'w-bay1-bot', type: 'wall', x: 336, y: 700, x2: 675, y2: 700, layer: 'A-WALL' },
+    { id: 'w-bay1-left', type: 'wall', x: 336, y: 220, x2: 336, y2: 700, layer: 'A-WALL' },
+    { id: 'w-bay1-right', type: 'wall', x: 675, y: 220, x2: 675, y2: 700, layer: 'A-WALL' },
+    // Bay 1 horizontal divider beams
+    { id: 'w-bay1-d1', type: 'wall', x: 336, y: 340, x2: 675, y2: 340, layer: 'A-WALL' },
+    { id: 'w-bay1-d2', type: 'wall', x: 336, y: 460, x2: 675, y2: 460, layer: 'A-WALL' },
+    { id: 'w-bay1-d3', type: 'wall', x: 336, y: 580, x2: 675, y2: 580, layer: 'A-WALL' }
   );
 
   // Right Structural Bay Walls (A-WALL)
   entities.push(
-    { id: 'w-bay2-top', type: 'wall', x: 735, y: 290, x2: 900, y2: 290, layer: 'A-WALL' },
-    { id: 'w-bay2-bot', type: 'wall', x: 735, y: 545, x2: 900, y2: 545, layer: 'A-WALL' },
-    { id: 'w-bay2-left', type: 'wall', x: 735, y: 290, x2: 735, y2: 545, layer: 'A-WALL' },
-    { id: 'w-bay2-right', type: 'wall', x: 900, y: 290, x2: 900, y2: 545, layer: 'A-WALL' },
+    { id: 'w-bay2-top', type: 'wall', x: 780, y: 220, x2: 1150, y2: 220, layer: 'A-WALL' },
+    { id: 'w-bay2-bot', type: 'wall', x: 780, y: 700, x2: 1150, y2: 700, layer: 'A-WALL' },
+    { id: 'w-bay2-left', type: 'wall', x: 780, y: 220, x2: 780, y2: 700, layer: 'A-WALL' },
+    { id: 'w-bay2-right', type: 'wall', x: 1150, y: 220, x2: 1150, y2: 700, layer: 'A-WALL' },
     // Central Service Shaft in Bay 2
-    { id: 'w-shaft-l', type: 'wall', x: 810, y: 290, x2: 810, y2: 545, layer: 'A-WALL' },
-    { id: 'w-shaft-r', type: 'wall', x: 830, y: 290, x2: 830, y2: 545, layer: 'A-WALL' },
-    // Bay 2 dividers
-    { id: 'w-bay2-d1', type: 'wall', x: 735, y: 354, x2: 900, y2: 354, layer: 'A-WALL' },
-    { id: 'w-bay2-d2', type: 'wall', x: 735, y: 418, x2: 900, y2: 418, layer: 'A-WALL' },
-    { id: 'w-bay2-d3', type: 'wall', x: 735, y: 482, x2: 900, y2: 482, layer: 'A-WALL' }
+    { id: 'w-shaft-l', type: 'wall', x: 955, y: 220, x2: 955, y2: 700, layer: 'A-WALL' },
+    { id: 'w-shaft-r', type: 'wall', x: 975, y: 220, x2: 975, y2: 700, layer: 'A-WALL' },
+    // Bay 2 horizontal divider beams
+    { id: 'w-bay2-d1', type: 'wall', x: 780, y: 340, x2: 1150, y2: 340, layer: 'A-WALL' },
+    { id: 'w-bay2-d2', type: 'wall', x: 780, y: 460, x2: 1150, y2: 460, layer: 'A-WALL' },
+    { id: 'w-bay2-d3', type: 'wall', x: 780, y: 580, x2: 1150, y2: 580, layer: 'A-WALL' }
   );
 
   // Room zones (A-ROOM)
   entities.push(
-    { id: 'r-bay1', type: 'room', x: 550, y: 295, width: 160, height: 245, label: 'STRUCTURAL BAY 1', layer: 'A-ROOM' },
-    { id: 'r-aisle', type: 'room', x: 715, y: 295, width: 20, height: 245, label: 'CENTRAL AISLE', layer: 'A-ROOM' },
-    { id: 'r-bay2', type: 'room', x: 740, y: 295, width: 155, height: 245, label: 'STRUCTURAL BAY 2', layer: 'A-ROOM' }
+    { id: 'r-bay1', type: 'room', x: 340, y: 225, width: 330, height: 470, label: 'STRUCTURAL BAY 1', layer: 'A-ROOM' },
+    { id: 'r-aisle', type: 'room', x: 680, y: 225, width: 95, height: 470, label: 'CENTRAL CIRCULATION AISLE', layer: 'A-ROOM' },
+    { id: 'r-bay2', type: 'room', x: 785, y: 225, width: 360, height: 470, label: 'STRUCTURAL BAY 2', layer: 'A-ROOM' }
   );
 
-  // Equipment column markers (EQUIPMENT)
-  [310, 375, 440, 505].forEach((y, i) => {
+  // Equipment column markers along left perimeter (EQUIPMENT)
+  [250, 360, 480, 600, 680].forEach((y, i) => {
     entities.push({
       id: `eq-col-${i}`,
       type: 'equipment',
-      x: 520,
+      x: 245,
       y,
-      width: 20,
-      height: 25,
+      width: 60,
+      height: 30,
       label: `COL-${i + 1}`,
       layer: 'EQUIPMENT'
     });
