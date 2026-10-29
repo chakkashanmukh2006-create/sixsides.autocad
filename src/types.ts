@@ -101,9 +101,10 @@ export interface BlueprintDataset {
     | 'BioPharma Logistics Warehouse' 
     | 'Radiology & Imaging Suite' 
     | 'Residential Multi-Family' 
+    | 'Commercial & Industrial Facility'
     | 'Custom Upload';
   filename: string;
-  fileType: 'dxf' | 'pdf' | 'img';
+  fileType: 'dxf' | 'dwg' | 'pdf' | 'img';
   dimensions: {
     width: number;
     height: number;

@@ -8,6 +8,7 @@ import { BlueprintDataset } from '../types';
 import { INITIAL_DATASETS } from '../data/mockDatasets';
 import { uploadBlueprint, analyzeBlueprintWithAI } from '../services/api';
 import { generateDynamicBlueprintAnalysis } from '../utils/dynamicBlueprintAnalyzer';
+import { processUniversalCadFile, ProcessedCadFile } from '../utils/universalCadParser';
 
 interface UploadModalProps {
   isOpen: boolean;
@@ -29,18 +30,27 @@ export const UploadModal: React.FC<UploadModalProps> = ({
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
   const [scanPhase, setScanPhase] = useState<string>('AI OPTICAL SCANNING BLUEPRINT...');
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [processedCad, setProcessedCad] = useState<ProcessedCadFile | null>(null);
 
   if (!isOpen) return null;
 
-  const handleCadFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleCadFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
       setCadFile(file);
       if (!projectName) {
         setProjectName(file.name.replace(/\.[^/.]+$/, ''));
       }
-      if (file.type.startsWith('image/')) {
-        setPreviewUrl(URL.createObjectURL(file));
+      
+      // Process any CAD format (DWG thumbnail extraction, DXF parsing, or high-res images)
+      try {
+        const processed = await processUniversalCadFile(file);
+        setProcessedCad(processed);
+        if (processed.previewUrl) {
+          setPreviewUrl(processed.previewUrl);
+        }
+      } catch (err) {
+        console.warn('CAD file preview extraction notice:', err);
       }
     }
   };
@@ -55,37 +65,17 @@ export const UploadModal: React.FC<UploadModalProps> = ({
     if (!cadFile) return;
 
     setIsProcessing(true);
-    setScanPhase('OPTICAL VISION SCAN: Reading Architectural Rooms & Text via OCR...');
+    setScanPhase('OPTICAL CAD & VISION SCAN: Reading Drawing Database & Entities...');
 
     try {
-      let base64String = previewUrl || '';
-      let naturalWidth = 1400;
-      let naturalHeight = 900;
+      const activeProcessed = processedCad || await processUniversalCadFile(cadFile);
+      const base64String = activeProcessed.previewUrl || previewUrl || '';
+      const naturalWidth = activeProcessed.naturalWidth || 1400;
+      const naturalHeight = activeProcessed.naturalHeight || 900;
 
-      // Convert file to base64 data URL if it's an image
-      if (cadFile.type.startsWith('image/')) {
-        const base64Promise = new Promise<string>((resolve) => {
-          const reader = new FileReader();
-          reader.onloadend = () => resolve(reader.result as string);
-          reader.readAsDataURL(cadFile);
-        });
-        base64String = await base64Promise;
+      setScanPhase('AI SPATIAL ANALYSIS: Detecting Structural Bays, Egress Aisles & Corridor Envelopes...');
 
-        // Measure natural pixel dimensions of user drawing
-        const dimPromise = new Promise<{ w: number; h: number }>((resolve) => {
-          const img = new Image();
-          img.onload = () => resolve({ w: img.naturalWidth || 1400, h: img.naturalHeight || 900 });
-          img.onerror = () => resolve({ w: 1400, h: 900 });
-          img.src = base64String;
-        });
-        const dims = await dimPromise;
-        naturalWidth = dims.w;
-        naturalHeight = dims.h;
-      }
-
-      setScanPhase('AI SPATIAL ANALYSIS: Detecting Room Coordinates & Corridor Envelopes...');
-
-      // Call real optical vision backend
+      // Call optical vision backend
       let analyzedDataset: BlueprintDataset | null = null;
       if (base64String) {
         analyzedDataset = await analyzeBlueprintWithAI({
@@ -98,20 +88,24 @@ export const UploadModal: React.FC<UploadModalProps> = ({
         });
       }
 
-      setScanPhase('CODE AUDIT: Cross-referencing IRC 2024 Building & Life-Safety Mandates...');
+      setScanPhase('CODE AUDIT: Cross-referencing IBC 2024 / IRC & OSHA Safety Mandates...');
 
       // If backend vision returned dataset, use it; otherwise fallback to dynamic analyzer
       const customDataset = analyzedDataset || generateDynamicBlueprintAnalysis(
         cadFile.name,
         projectName,
-        previewUrl || undefined,
+        base64String || undefined,
         specFile?.name
       );
 
-      // Ensure customImageUrl is retained so CadViewer displays the uploaded image
-      if (previewUrl && !customDataset.customImageUrl) {
-        customDataset.customImageUrl = previewUrl;
+      // Ensure customImageUrl and vector cadEntities are preserved
+      if (base64String && !customDataset.customImageUrl) {
+        customDataset.customImageUrl = base64String;
       }
+      if (activeProcessed.cadEntities && activeProcessed.cadEntities.length > 0) {
+        customDataset.cadEntities = activeProcessed.cadEntities;
+      }
+      customDataset.fileType = activeProcessed.fileType;
 
       setTimeout(() => {
         setIsProcessing(false);
@@ -119,7 +113,7 @@ export const UploadModal: React.FC<UploadModalProps> = ({
         onClose();
       }, 500);
     } catch (err) {
-      console.error('Custom AI upload analysis error:', err);
+      console.error('Custom CAD upload error:', err);
       const fallbackDataset = generateDynamicBlueprintAnalysis(
         cadFile.name,
         projectName,
@@ -271,8 +265,13 @@ export const UploadModal: React.FC<UploadModalProps> = ({
                   {cadFile && (
                     <span className="mt-2 text-[10px] font-mono text-emerald-400 flex items-center space-x-1">
                       <CheckCircle2 className="w-3.5 h-3.5" />
-                      <span>Blueprint Loaded</span>
+                      <span>{previewUrl ? 'CAD Drawing Extracted & Ready' : 'Blueprint File Loaded'}</span>
                     </span>
+                  )}
+                  {previewUrl && (
+                    <div className="mt-2.5 w-full h-20 rounded-lg overflow-hidden border border-cyan-500/40 bg-slate-950 flex items-center justify-center p-1 shadow-inner">
+                      <img src={previewUrl} alt="CAD Preview" className="h-full object-contain rounded" />
+                    </div>
                   )}
                 </div>
 

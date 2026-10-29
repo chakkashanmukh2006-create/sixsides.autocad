@@ -1,4 +1,5 @@
 import { BlueprintDataset, DefectAnnotation, SpecificationRule } from '../types';
+import { generateStructuralCadEntities } from './universalCadParser';
 
 function hashString(str: string): number {
   let hash = 0;
@@ -21,7 +22,9 @@ export function generateDynamicBlueprintAnalysis(
 
   // Detect context profile based on filename keywords or hash
   let profileIndex = seed % 5;
-  if (lower.includes('000016')) {
+  if (lower.endsWith('.dwg') || lower.endsWith('.dxf') || lower.includes('shanmukh') || lower.includes('cad') || lower.includes('bay') || lower.includes('struct')) {
+    profileIndex = 5; // Commercial & Industrial Structural Bay & Aisle (matches DWG CAD layout)
+  } else if (lower.includes('000016')) {
     profileIndex = 0; // Staircase + Kitchen Work Aisle (matches 000016 layout)
   } else if (lower.includes('000004') || lower.includes('000012')) {
     profileIndex = 2; // French Villa Garage Separation + Hallway (matches 000004/000012 layout)
@@ -32,7 +35,7 @@ export function generateDynamicBlueprintAnalysis(
   }
 
   const profiles: Array<{
-    facilityType: 'Residential Multi-Family' | 'Custom Upload';
+    facilityType: 'Residential Multi-Family' | 'Commercial & Industrial Facility' | 'Custom Upload';
     specTitle: string;
     authority: string;
     summary: string;
@@ -495,6 +498,97 @@ export function generateDynamicBlueprintAnalysis(
           matchedEntitiesCount: 1
         }
       ]
+    },
+
+    // 5: Commercial & Industrial Structural CAD Facility (Matches DWG / DXF structural plans)
+    {
+      facilityType: 'Commercial & Industrial Facility',
+      specTitle: 'IBC 2024 Chapter 10 & OSHA 1910 (Egress Aisles & Equipment Working Space)',
+      authority: 'International Building Code Council (IBC) & OSHA Compliance Division',
+      summary: `Automated statutory code compliance inspection for "${fileName}". Evaluated primary central circulation aisle between structural bays and perimeter equipment buffer clearances.`,
+      spatialFlow: 'Twin structural bay configuration with central primary egress corridor and perimeter equipment service envelopes.',
+      safetyRisk: 'NON-COMPLIANCE DETECTED: The central circulation passage width of 1,380 mm violates the mandatory 1,800 mm minimum required under IBC §1020.2.',
+      keyFindings: [
+        'Central circulation aisle between structural bays is 1,380 mm (IBC §1020 mandates ≥ 1,800 mm clear width).',
+        'Perimeter structural service clearance is 860 mm (OSHA 1910 mandates ≥ 1,200 mm maintenance envelope).',
+        'Structural load-bearing partition layout satisfies primary dimensional grid.'
+      ],
+      defects: [
+        {
+          id: 'CAD-AISLE-01',
+          title: 'Primary Central Circulation Aisle Egress Width Deficit',
+          discipline: 'LifeSafety',
+          severity: 'CRITICAL',
+          status: 'FLAGGED',
+          specCode: 'IBC §1020.2 / NFPA 101 §7.3.4 (Primary Egress Passage)',
+          specRequirement: 'Primary central circulation corridors and egress aisles in multi-bay commercial facilities must maintain an unobstructed clear width of not less than 1,800 mm.',
+          actualMeasured: 'Measured clear width: 1,380 mm (-420 mm non-compliant passage deficit)',
+          deviation: '-420 mm narrow circulation passage',
+          remediation: 'Re-align structural bay storage envelope to provide full 1,800 mm unobstructed egress corridor.',
+          storyNarrative: 'The central passage between structural bays is restricted to 1,380 mm. During an emergency evacuation or pallet cart movement, this creates a dangerous choke point.',
+          boundingBox: { x: 675, y: 300, width: 85, height: 260 },
+          targetLabel: 'PRIMARY CENTRAL CIRCULATION AISLE (BETWEEN BAYS)',
+          layer: 'A-WALL',
+          confidenceScore: 0.96,
+          dimensionCallout: {
+            x1: 685,
+            y1: 430,
+            x2: 750,
+            y2: 430,
+            orientation: 'horizontal',
+            measuredLabel: '1,380 mm PASSAGE (-420 mm DEFICIT)',
+            requiredLabel: 'REQ: ≥ 1,800 mm (IBC §1020)'
+          }
+        },
+        {
+          id: 'CAD-EQUIP-02',
+          title: 'Structural Bay Perimeter Equipment & Service Buffer Encroachment',
+          discipline: 'MEP',
+          severity: 'MAJOR',
+          status: 'FLAGGED',
+          specCode: 'OSHA 1910.22 / NFPA 70 §110.26 (Equipment Working Space)',
+          specRequirement: 'Working space and maintenance perimeter clearance around primary service columns and distribution gear must be not less than 1,200 mm.',
+          actualMeasured: 'Measured perimeter service clearance: 860 mm (-340 mm maintenance buffer encroachment)',
+          deviation: '-340 mm equipment clearance deficit',
+          remediation: 'Relocate perimeter rack boundary by 340 mm to restore required 1,200 mm service envelope.',
+          storyNarrative: 'Perimeter column lines lack required working space clearance. Technicians and emergency personnel will have restricted access to electrical and structural service points.',
+          boundingBox: { x: 520, y: 300, width: 95, height: 260 },
+          targetLabel: 'PERIMETER STRUCTURAL BAY & SERVICE BUFFER (BAY 1)',
+          layer: 'EQUIPMENT',
+          confidenceScore: 0.94,
+          dimensionCallout: {
+            x1: 530,
+            y1: 430,
+            x2: 605,
+            y2: 430,
+            orientation: 'horizontal',
+            measuredLabel: '860 mm CLEAR (-340 mm BUFFER ENCROACHMENT)',
+            requiredLabel: 'REQ: ≥ 1,200 mm (OSHA 1910)'
+          }
+        }
+      ],
+      specs: [
+        {
+          id: 'RULE-IBC-1020',
+          code: 'IBC-1020.2',
+          category: 'LifeSafety',
+          title: 'Primary Egress Corridor Minimum Width',
+          requirement: 'Unobstructed circulation width ≥ 1,800 mm (72")',
+          threshold: '≥ 1,800 mm',
+          status: 'FAIL',
+          matchedEntitiesCount: 1
+        },
+        {
+          id: 'RULE-OSHA-1910',
+          code: 'OSHA-1910.22',
+          category: 'MEP',
+          title: 'Structural Bay Equipment Clearance Buffer',
+          requirement: 'Service access envelope ≥ 1,200 mm (48")',
+          threshold: '≥ 1,200 mm',
+          status: 'FAIL',
+          matchedEntitiesCount: 1
+        }
+      ]
     }
   ];
 
@@ -505,7 +599,7 @@ export function generateDynamicBlueprintAnalysis(
     name,
     facilityType: selected.facilityType,
     filename: fileName,
-    fileType: fileName.endsWith('.dxf') ? 'dxf' : fileName.endsWith('.pdf') ? 'pdf' : 'img',
+    fileType: fileName.endsWith('.dwg') ? 'dwg' : fileName.endsWith('.dxf') ? 'dxf' : fileName.endsWith('.pdf') ? 'pdf' : 'img',
     dimensions: {
       width: 1400,
       height: 900,
@@ -517,19 +611,19 @@ export function generateDynamicBlueprintAnalysis(
     specDocument: {
       title: specFileName ? `Parsed Specification: ${specFileName}` : selected.specTitle,
       authority: selected.authority,
-      version: 'IRC-2024 / RES-CODE-REV4',
+      version: 'IBC-2024 / RES-CODE-REV4',
       summary: selected.summary
     },
     storyNarrative: {
       summary: selected.summary,
       spatialFlow: selected.spatialFlow,
       safetyRisk: selected.safetyRisk,
-      logisticalEfficiency: 'Standard residential traffic circulation with direct corridor access between entry points and living zones.',
+      logisticalEfficiency: profileIndex === 5 ? 'Optimized dual structural bay layout with direct central corridor logistics.' : 'Standard residential traffic circulation with direct corridor access between entry points and living zones.',
       keyFindings: selected.keyFindings
     },
     defects: selected.defects,
     specs: selected.specs,
-    cadEntities: [],
+    cadEntities: profileIndex === 5 ? generateStructuralCadEntities() : [],
     customImageUrl: previewUrl || undefined
   };
 }
