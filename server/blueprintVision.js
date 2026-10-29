@@ -220,6 +220,20 @@ export async function analyzeBlueprintWithVision({
         else if (/^(sejour|living|salon)$/i.test(text)) detections.push({ type: 'LIVING', label: 'LIVING ROOM', text, bbox });
       }
     }
+
+    // Check drawing title block & sheet text to refine viewType if not explicitly passed
+    if (!viewType) {
+      const allOcrText = (ret.data?.text || '').toLowerCase();
+      if (/elevation|facade|exterior/i.test(allOcrText)) {
+        resolvedViewType = 'elevation';
+      } else if (/cross\s*section|building\s*section|longitudinal\s*section/i.test(allOcrText)) {
+        resolvedViewType = 'section';
+      } else if (/site\s*plan|plot\s*plan|survey|master\s*plan/i.test(allOcrText)) {
+        resolvedViewType = 'site';
+      } else if (/floor\s*plan|level\s*[0-9]|ground\s*plan/i.test(allOcrText)) {
+        resolvedViewType = 'plan';
+      }
+    }
   } catch (ocrErr) {
     console.warn('[AI-VISION] OCR scan notice:', ocrErr.message);
   } finally {
