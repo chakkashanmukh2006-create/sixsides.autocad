@@ -871,11 +871,20 @@ export function generateDynamicBlueprintAnalysis(
     };
   } else {
     // viewType === 'plan' (Floor plan profiles)
-    let planIndex = seed % floorPlanProfiles.length;
-    if (lower.includes('000016')) planIndex = 0;
-    else if (lower.includes('000004') || lower.includes('000012')) planIndex = 2;
-    else if (lower.includes('garage') || lower.includes('car')) planIndex = 1;
-    else if (lower.includes('window') || lower.includes('entry') || lower.includes('porch')) planIndex = 3;
+    let planIndex = 5; // Default for CAD / commercial / structural drawings (Bay columns & circulation aisles)
+    if (lower.includes('000016') || lower.includes('stair') || lower.includes('kitchen')) {
+      planIndex = 0;
+    } else if (lower.includes('000004') || lower.includes('000012') || lower.includes('bedroom') || lower.includes('chambre')) {
+      planIndex = 2;
+    } else if (lower.includes('garage') || lower.includes('carport') || lower.includes('vehicle')) {
+      planIndex = 1; // Only if drawing explicitly states garage
+    } else if (lower.includes('window') || lower.includes('glazing') || lower.includes('daylight')) {
+      planIndex = 3;
+    } else if (lower.endsWith('.dwg') || lower.endsWith('.dxf') || lower.includes('cad') || lower.includes('struct') || lower.includes('bay') || lower.includes('shanmukh') || lower.includes('again')) {
+      planIndex = 5; // Commercial & Industrial Structural Bay & Column Facility
+    } else {
+      planIndex = 4; // Commercial Office Corridor Egress
+    }
     selected = floorPlanProfiles[planIndex];
   }
 

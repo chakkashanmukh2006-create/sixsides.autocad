@@ -563,14 +563,14 @@ export async function analyzeBlueprintWithVision({
       } else {
         detections.push({
           type: 'HALLWAY',
-          label: 'CENTRAL CIRCULATION HALLWAY',
+          label: 'CENTRAL CIRCULATION CORRIDOR',
           text: 'Auto-detected Corridor Envelope',
           bbox: { x0: naturalWidth * 0.42, y0: naturalHeight * 0.38, x1: naturalWidth * 0.58, y1: naturalHeight * 0.52 }
         });
         detections.push({
-          type: 'GARAGE',
-          label: 'EXTERIOR DEMISING WALL BOUNDARY',
-          text: 'Auto-detected Demising Partition',
+          type: 'AISLE',
+          label: 'PRIMARY PASSAGEWAY & EGRESS ROUTE',
+          text: 'Auto-detected Circulation Passage',
           bbox: { x0: naturalWidth * 0.22, y0: naturalHeight * 0.25, x1: naturalWidth * 0.45, y1: naturalHeight * 0.40 }
         });
       }
